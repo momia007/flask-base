@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Asistencia</title>
+    <!-- Bootstrap CSS desde CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h1 class="text-center text-primary mb-4">Registro de Asistencia</h1>
+        
+        <form method="POST" action="{{ url_for('asistencia') }}" class="card p-4 shadow-sm">
+            <div class="mb-3">
+                <label for="alumno" class="form-label">Alumno</label>
+                <input type="text" id="alumno" name="alumno" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="estado" class="form-label">Estado</label>
+                <select id="estado" name="estado" class="form-select" required>
+                    <option value="Presente">Presente</option>
+                    <option value="Ausente">Ausente</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Guardar</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Volver al inicio</a>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (opcional, para componentes dinámicos) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
