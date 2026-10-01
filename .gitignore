@@ -1,4 +1,36 @@
-venv/
-__pycache__/
+# =============================================================================
+#  Archivos que NO se versionan en Git
+# =============================================================================
+
+# Credenciales y secretos (¡NUNCA versionar esto!)
+asistencia-*.json
 .env
-*.log
+*.key
+*credentials*.json
+
+# Planillas de Excel (son datos, no código)
+*.xlsx
+*.xls
+
+# Cosas temporales o locales
+instance/
+__pycache__/
+*.pyc
+*.pyo
+files.zip
+Eliminar.txt
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp

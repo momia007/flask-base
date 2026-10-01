@@ -1,0 +1,294 @@
+/* static/css/style.css */
+.top-bar {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.top-bar a {
+    font-size: 1.5rem;
+    color: #0d3b66;
+    text-decoration: none;
+}
+.main-btn {
+    padding: 20px;
+    font-size: 1.5rem;
+    border-radius: 10px;
+    margin-top: 0px;
+    background-color: #51a7fd;
+    color: #0d3b66;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+.main-btn:hover {
+    transform: scale(1.05);
+    background-color: #8ec3fc;
+}
+.main-btn.consultas {
+    background-color: #e0cd1d;
+    color: #fff;
+}
+.main-btn.consultas:hover {
+    background-color: #009970;
+}
+
+
+/* Fondo claro por defecto */
+body {
+    padding-top: 70px;   /* ajustá este número si la barra es más alta/baja */
+    background-color: #f8f9fa; /* gris claro Bootstrap */
+    color: #212529;
+}
+
+/* Fondo y texto en modo oscuro */
+body.dark-mode {
+    padding-top: 70px;
+    background-color: #121212;
+    color: #f1f1f1;
+}
+
+/* Ajustes de botones */
+body.dark-mode .btn-primary {
+    background-color: #375a7f;
+    border: none;
+}
+body.dark-mode .btn-success {
+    background-color: #00bc8c;
+    border: none;
+}
+body.dark-mode .btn-warning {
+    background-color: #f39c12;
+    color: #000;
+    border: none;
+}
+body.dark-mode .btn-outline-secondary {
+    border-color: #f1f1f1;
+    color: #f1f1f1;
+}
+body.dark-mode .card {
+    background-color: #1e1e1e;
+    color: #f1f1f1;
+}
+.dark-switch {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+}
+.home-icon {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+}
+
+/* Ajustes de asistencia */
+.alumno-item {
+    font-size: 1.5rem;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background-color: #8ec3fc;
+    color: #0d3b66;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.alumno-item:nth-child(even) {
+    background-color: #51a7fd;
+}
+
+/* Checkbox más grande */
+.alumno-item .form-check-input {
+    transform: scale(1.3); /* 30% más grande */
+    flex: 0 0 auto;   /* ancho fijo, no se achica ni se estira */
+}
+
+/* Columna del nombre: ocupa todo el espacio sobrante, y si el texto es
+   demasiado largo se corta con puntos suspensivos en vez de empujar
+   al entaje o al checkbox */
+.alumno-item .alumno-nombre {
+    flex: 1 1 auto;
+    min-width: 0;           /* permite que el flex-item se achique por debajo de su contenido */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 12px;
+}
+
+/* Columna del porcentaje: ancho fijo, siempre en el mismo lugar
+   sin importar cuánto mida el nombre del alumno */
+.alumno-item .alumno-porcentaje {
+    flex: 0 0 80px;
+    text-align: left;
+    margin-right: 12px;
+}
+/* Botón guardar en verde */
+.footer-btn {
+    margin-top: 15px; /* misma separación que los bloques de alumnos */
+    padding: 15px;
+    font-size: 1.2rem;
+    border-radius: 10px;
+    background-color: #198754; /* verde Bootstrap */
+    color: #fff;
+    text-decoration: none;
+    display: inline-block;
+}
+.footer-btn:hover {
+    background-color: #157347; /* verde más oscuro al pasar */
+}
+
+.card-header {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.card {
+    border-radius: 8px;
+}
+
+.card-body p {
+    margin-bottom: 0.5rem;
+}
+
+.fecha-con-asistencia {
+    background-color: #28a745 !important; /* verde Bootstrap */
+    color: white !important;
+    border-radius: 50%;
+}
+
+/*=================================================*/
+/*================= MODALES =======================*/
+/*=================================================*/
+
+/* Estilo general del modal de acción */
+#modalAccion .modal-content {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Encabezado */
+#modalAccion .modal-header {
+    background-color: #0d6efd; /* azul Bootstrap */
+    color: #fff;
+    border-bottom: none;
+}
+
+/* Texto del cuerpo */
+#modalAccion .modal-body {
+    font-size: 1rem;
+    color: #212529;
+}
+
+/* Botones internos */
+#modalAccion .btn-outline-info {
+    border-color: #0dcaf0;
+    color: #0dcaf0;
+}
+#modalAccion .btn-outline-info:hover {
+    background-color: #0dcaf0;
+    color: #fff;
+}
+
+#modalAccion .btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+#modalAccion .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* --- Modo oscuro --- */
+body.dark-mode #modalAccion .modal-content {
+    background-color: #1e1e1e;
+    color: #f1f1f1;
+}
+
+body.dark-mode #modalAccion .modal-header {
+    background-color: #375a7f; /* azul más apagado */
+    color: #f1f1f1;
+}
+
+body.dark-mode #modalAccion .modal-body {
+    color: #ddd;
+}
+
+body.dark-mode #modalAccion .btn-outline-info {
+    border-color: #0dcaf0;
+    color: #0dcaf0;
+}
+body.dark-mode #modalAccion .btn-outline-info:hover {
+    background-color: #0dcaf0;
+    color: #000;
+}
+
+body.dark-mode #modalAccion .btn-outline-danger {
+    border-color: #f39c12;
+    color: #f39c12;
+}
+body.dark-mode #modalAccion .btn-outline-danger:hover {
+    background-color: #f39c12;
+    color: #000;
+}
+
+/*=================================================*/
+/*============ BARRA SUPERIOR (extras) ============*/
+/*=================================================*/
+
+/* Texto secundario de la barra (nombre app, versión).
+   En modo claro se ve gris; en modo oscuro, gris claro. */
+.top-bar .top-bar-info {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+.top-bar .top-bar-version {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+body.dark-mode .top-bar .top-bar-info,
+body.dark-mode .top-bar .top-bar-version {
+    color: #b0b0b0;
+}
+
+/* El ícono de la casa en modo oscuro debe verse claro */
+body.dark-mode .top-bar a {
+    color: #8ec3fc;
+}
+
+/* Ícono de configuración en la barra superior */
+.top-bar .top-bar-config {
+    font-size: 1.2rem;
+    color: #6c757d;
+    text-decoration: none;
+    margin-left: 8px;
+}
+.top-bar .top-bar-config:hover {
+    color: #0d3b6a;
+}
+body.dark-mode .top-bar .top-bar-config {
+    color: #b0b0b0;
+}
+body.dark-mode .top-bar .top-bar-config:hover {
+    color: #8ec3fc;
+}
+
+/* Ícono home en la barra superior */
+.top-bar .top-bar-home {
+    font-size: 1.5rem;
+    color: #0d3b66;
+    text-decoration: none;
+}
+.top-bar .top-bar-home:hover {
+    color: #51a7fd;
+}
+body.dark-mode .top-bar .top-bar-home {
+    color: #8ec3fc;
+}
+body.dark-mode .top-bar .top-bar-home:hover {
+    color: #ffffff;
+}
