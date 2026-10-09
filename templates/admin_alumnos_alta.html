@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block title %}Nuevo alumno{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5" style="max-width: 720px;">
+
+    <h2 class="mb-4">➕ Nuevo alumno</h2>
+
+    <form method="POST" action="{{ url_for('admin_alumnos.alta') }}">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="dni" class="form-label">DNI</label>
+                <input type="text" class="form-control" id="dni" name="dni"
+                       value="{{ datos.dni or '' }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="curso" class="form-label">Curso</label>
+                <select class="form-select" id="curso" name="curso" required>
+                    <option value="">-- Seleccione curso --</option>
+                    {% for c in cursos %}
+                        <option value="{{ c.id }}"
+                                {% if datos.curso == c.id %}selected{% endif %}>
+                            {{ c.curso }}{% if c.nick %} ({{ c.nick }}){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label for="apellidos" class="form-label">Apellidos</label>
+                <input type="text" class="form-control" id="apellidos" name="apellidos"
+                       value="{{ datos.apellidos or '' }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="nombres" class="form-label">Nombres</label>
+                <input type="text" class="form-control" id="nombres" name="nombres"
+                       value="{{ datos.nombres or '' }}" required>
+            </div>
+
+            <div class="col-md-6">
+                <label for="cuatrimestre" class="form-label">Cuatrimestre</label>
+                <input type="text" class="form-control" id="cuatrimestre" name="cuatrimestre"
+                       value="{{ datos.cuatrimestre or '' }}"
+                       placeholder="Ej: 1">
+            </div>
+            <div class="col-md-6">
+                <label for="anio" class="form-label">Año</label>
+                <input type="text" class="form-control" id="anio" name="anio"
+                       value="{{ datos.anio or '' }}"
+                       placeholder="Ej: 2026">
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <a href="{{ url_for('admin_alumnos.index') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

@@ -1,4 +1,50 @@
+# =============================================================================
+#  Archivos que NO se versionan en Git
+# =============================================================================
+
+# Entornos virtuales
 venv/
+env/
+.venv/
+
+# Compilados de Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Variables de entorno
 .env
+
+# Logs
 *.log
+logs/
+
+# Credenciales y secretos (¡NUNCA versionar esto!)
+asistencia-*.json
+*credentials*.json
+*.key
+
+# Planillas de Excel (son datos, no código)
+*.xlsx
+*.xls
+
+# Carpeta de datos locales (caché, backups, etc.)
+instance/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos temporales / basura
+files.zip
+Eliminar.txt
+test_backup.py
+README_asistencia_porcentaje.md

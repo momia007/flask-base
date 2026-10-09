@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block title %}Editar alumno{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5" style="max-width: 720px;">
+
+    <h2 class="mb-4">✏️ Editar alumno</h2>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <p class="mb-1"><strong>DNI:</strong> {{ alumno.dni }}</p>
+            <p class="mb-0"><strong>Curso:</strong> {{ curso_info.curso or alumno.curso_id }}
+                {% if curso_info.nick %}<small class="text-muted">({{ curso_info.nick }})</small>{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin_alumnos.editar') }}">
+        <input type="hidden" name="dni" value="{{ alumno.dni }}">
+        <input type="hidden" name="curso" value="{{ alumno.curso_id }}">
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="apellidos" class="form-label">Apellidos</label>
+                <input type="text" class="form-control" id="apellidos" name="apellidos"
+                       value="{{ alumno.apellidos }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="nombres" class="form-label">Nombres</label>
+                <input type="text" class="form-control" id="nombres" name="nombres"
+                       value="{{ alumno.nombres }}" required>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3 small mb-0">
+            El DNI y el curso no se pueden modificar desde acá.
+            Si el alumno cambia de curso, hay que darlo de baja en el actual
+            y darlo de alta en el nuevo.
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            <a href="{{ url_for('admin_alumnos.index') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

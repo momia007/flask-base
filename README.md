@@ -72,11 +72,17 @@ ProyectoBase/
 
 2.  Ejecutar la aplicación:
 
-    flask run
-
+    set FLASK_DEBUG=1 "para ver logs en consola exploto la variable de entorno"
+    flask run  (solo en la pc y en local)
+    flask run --host=0.0.0.0  (accesible desde lan si se pone la ip del serv. ej:  http://192.168.0.10:5000)
+    
 3.  Abrir en navegador:
 
     Inicio: http://127.0.0.1:5000/
+
+    ## para pruebas
+    set FLASK_DEBUG=1
+    flask run --host=0.0.0.0 --port=5001
 
 
 ##  📌 Próximos pasos

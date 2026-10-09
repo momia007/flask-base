@@ -1,0 +1,219 @@
+{% extends "layout.html" %}
+{% block title %}Configuración{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+
+    <h2 class="mb-4">⚙️ Configuración</h2>
+
+    <!-- ============================ -->
+    <!-- Info de la aplicación         -->
+    <!-- ============================ -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Información de la aplicación</div>
+        <div class="card-body">
+            <p><strong>Nombre:</strong> {{ info_app.nombre }}</p>
+            <p><strong>Versión:</strong> v{{ info_app.version }}</p>
+            <p>
+                <strong>Entorno:</strong>
+                {% if info_app.entorno == 'produccion' %}
+                    <span class="badge bg-success">Producción</span>
+                {% elif info_app.entorno == 'desarrollo' %}
+                    <span class="badge bg-warning text-dark">Desarrollo</span>
+                {% else %}
+                    <span class="badge bg-secondary">{{ info_app.entorno }}</span>
+                {% endif %}
+            </p>
+            <p><strong>Planilla:</strong> {{ info_app.spreadsheet_nombre }}</p>
+            <p class="mb-0">
+                <strong>ID de la planilla:</strong>
+                <code id="spreadsheet-id">{{ info_app.spreadsheet_id }}</code>
+                <button class="btn btn-sm btn-outline-secondary ms-2"
+                        onclick="copiarId()">📋 Copiar</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- ============================ -->
+    <!-- Backups                       -->
+    <!-- ============================ -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">Backups</div>
+        <div class="card-body">
+
+            <p class="text-muted mb-2">
+                Copia de seguridad de la planilla activa. Se guardan localmente
+                {% if info_backup.en_drive %}y también en Drive{% endif %}.
+                Se conservan los últimos <strong>{{ info_backup.retencion }}</strong> backups.
+            </p>
+
+            <p class="text-muted small mb-3">
+                <strong>Carpeta local:</strong> <code>{{ info_backup.carpeta_local }}</code>
+                {% if not info_backup.activo %}
+                    <span class="badge bg-secondary ms-2">Backups desactivados</span>
+                {% endif %}
+            </p>
+
+            <form method="POST" action="{{ url_for('configuracion.hacer_backup_ahora') }}"
+                  onsubmit="return confirm('¿Hacer un backup ahora? Puede tardar unos segundos.')">
+                <button class="btn btn-success mb-3" {% if not info_backup.activo %}disabled{% endif %}>
+                    💾 Hacer backup ahora
+                </button>
+            </form>
+
+            {% if backups %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Motivo</th>
+                            <th>Tamaño</th>
+                            <th>Ubicaciones</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in backups %}
+                        <tr>
+                            <td class="small">{{ b.fecha }}</td>
+                            <td class="small">
+                                <span class="badge bg-light text-dark">{{ b.motivo }}</span>
+                            </td>
+                            <td class="small text-muted">{{ b.tamaño_kb }} KB</td>
+                            <td class="small">
+                                {% if b.ruta_local %}
+                                    <span title="{{ b.ruta_local }}">💾 local</span>
+                                {% endif %}
+                                {% if b.drive_id %}
+                                    <a href="https://docs.google.com/spreadsheets/d/{{ b.drive_id }}/edit"
+                                       target="_blank" rel="noopener">☁️ drive</a>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <form method="POST"
+                                      action="{{ url_for('configuracion.borrar_backup', nombre=b.nombre) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('¿Borrar el backup {{ b.nombre }}?');">
+                                    <button class="btn btn-sm btn-outline-danger" title="Borrar">🗑️</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-muted mb-0">Todavía no hay backups hechos.</p>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- ============================ -->
+    <!-- Caché                         -->
+    <!-- ============================ -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">Caché de lecturas</div>
+        <div class="card-body">
+
+            <p class="text-muted">
+                Las hojas de Google Sheets se guardan en un archivo local durante un rato
+                para no pasarse del límite de lecturas de Google. Acá podés ver el estado
+                y forzar la recarga.
+            </p>
+            <p class="text-muted small mb-3">
+                <strong>Archivo:</strong> <code>{{ estado_cache.ruta_archivo }}</code>
+                {% if not estado_cache.existe_archivo %}
+                    <span class="badge bg-secondary ms-2">(todavía no se creó)</span>
+                {% endif %}
+            </p>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <form method="POST" action="{{ url_for('configuracion.refrescar_todo') }}">
+                    <button class="btn btn-warning">🔄 Refrescar TODO el caché</button>
+                </form>
+                <form method="POST" action="{{ url_for('configuracion.borrar_cache') }}">
+                    <button class="btn btn-outline-danger"
+                            onclick="return confirm('¿Borrar el archivo de caché? Se regenera solo en la próxima lectura.')">
+                        🗑️ Borrar archivo de caché
+                    </button>
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Hoja</th>
+                            <th>Estado</th>
+                            <th>Guardada</th>
+                            <th>Edad / TTL</th>
+                            <th>Registros</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in estado_cache.hojas %}
+                        <tr>
+                            <td><strong>{{ h.hoja }}</strong></td>
+                            <td>
+                                {% if not h.cacheada %}
+                                    <span class="badge bg-secondary">sin cachear</span>
+                                {% elif h.vencida %}
+                                    <span class="badge bg-danger">vencida</span>
+                                {% else %}
+                                    <span class="badge bg-success">fresca</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">
+                                {{ h.guardado_legible or "—" }}
+                            </td>
+                            <td class="small">
+                                {% if h.edad_segundos is not none %}
+                                    {{ h.edad_segundos }}s / {{ h.ttl_segundos }}s
+                                {% else %}
+                                    — / {{ h.ttl_segundos }}s
+                                {% endif %}
+                            </td>
+                            <td>{{ h.cantidad_registros }}</td>
+                            <td class="text-end">
+                                <form method="POST"
+                                      action="{{ url_for('configuracion.leer_ahora', hoja=h.hoja) }}"
+                                      class="d-inline">
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            title="Forzar lectura ahora (y cachear)">
+                                        ⬇️ Leer
+                                    </button>
+                                </form>
+                                <form method="POST"
+                                      action="{{ url_for('configuracion.refrescar_hoja', hoja=h.hoja) }}"
+                                      class="d-inline">
+                                    <button class="btn btn-sm btn-outline-warning"
+                                            title="Invalidar el caché de esta hoja">
+                                        🔄
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← Volver al inicio</a>
+
+</div>
+
+<script>
+    function copiarId() {
+        const texto = document.getElementById('spreadsheet-id').textContent;
+        navigator.clipboard.writeText(texto).then(() => {
+            alert('ID copiado al portapapeles');
+        });
+    }
+</script>
+{% endblock %}

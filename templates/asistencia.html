@@ -1,38 +1,368 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Asistencia</title>
-    <!-- Bootstrap CSS desde CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <h1 class="text-center text-primary mb-4">Registro de Asistencia</h1>
-        
-        <form method="POST" action="{{ url_for('asistencia') }}" class="card p-4 shadow-sm">
-            <div class="mb-3">
-                <label for="alumno" class="form-label">Alumno</label>
-                <input type="text" id="alumno" name="alumno" class="form-control" required>
-            </div>
+{% extends "layout.html" %}
 
-            <div class="mb-3">
-                <label for="estado" class="form-label">Estado</label>
-                <select id="estado" name="estado" class="form-select" required>
-                    <option value="Presente">Presente</option>
-                    <option value="Ausente">Ausente</option>
-                </select>
-            </div>
+{% block title %}Asistencia - {{ curso_nick }}{% endblock %}
 
-            <button type="submit" class="btn btn-primary w-100">Guardar</button>
-        </form>
+{% block content %}
+<div class="container mt-5">
 
-        <div class="text-center mt-3">
-            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Volver al inicio</a>
+    <h4 class="text-center mb-4">{{ curso_nick }} (ID {{ curso }}) - {{ fecha }}</h4>
+
+    {% if atrasada %}
+    <div class="alert alert-warning">
+        ⚠️ Estás cargando/revisando una <strong>fecha atrasada</strong> ({{ fecha }}), no la de hoy.
+        Para guardar cambios acá vas a necesitar la contraseña de administrador.
+    </div>
+    {% endif %}
+
+    <!-- ============================ -->
+    <!-- Selector de filtro de estado  -->
+    <!-- ============================ -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <label for="filtro-estado" class="form-label mb-0 small text-muted">Mostrar:</label>
+            <select id="filtro-estado" class="form-select form-select-sm" style="width:auto;"
+                    onchange="cambiarFiltro()">
+                <option value="activos" {% if filtro_estado == 'activos' %}selected{% endif %}>
+                    Solo activos
+                </option>
+                <option value="bajas" {% if filtro_estado == 'bajas' %}selected{% endif %}>
+                    Solo bajas
+                </option>
+                <option value="todos" {% if filtro_estado == 'todos' %}selected{% endif %}>
+                    Todos
+                </option>
+            </select>
+        </div>
+        <div class="small text-muted">
+            {{ alumnos|length }} alumno{% if alumnos|length != 1 %}s{% endif %}
         </div>
     </div>
 
-    <!-- Bootstrap JS (opcional, para componentes dinámicos) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <!-- ============================ -->
+    <!-- Lista de alumnos              -->
+    <!-- ============================ -->
+    <form method="POST" action="{{ url_for('asistencia.guardar', curso=curso) }}"
+          id="form-asistencia">
+        <input type="hidden" name="fecha" value="{{ fecha }}">
+        <input type="hidden" name="fecha_iso" value="{{ fecha_iso }}">
+        <input type="hidden" name="filtro_estado" value="{{ filtro_estado }}">
+
+        {% for alumno in alumnos %}
+        <div class="alumno-item d-flex align-items-center mb-2 {% if alumno.es_baja %}alumno-baja{% endif %}">
+
+            {# --- Botón de baja/reactivación (a la izquierda del nombre) --- #}
+            {% if alumno.id %}
+                {% if alumno.es_baja %}
+                    <button type="button"
+                            class="btn btn-sm btn-outline-success btn-estado me-2"
+                            title="Reactivar alumno"
+                            onclick="abrirModalEstado('{{ alumno.id }}', '{{ alumno.apellidos }} {{ alumno.nombres }}', 'reactivar')">
+                        ✅
+                    </button>
+                {% else %}
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger btn-estado me-2"
+                            title="Dar de baja al alumno"
+                            onclick="abrirModalEstado('{{ alumno.id }}', '{{ alumno.apellidos }} {{ alumno.nombres }}', 'baja')">
+                        ❌
+                    </button>
+                {% endif %}
+            {% else %}
+                {# Sin DNI: no se puede dar de baja ni reactivar #}
+                <span class="btn btn-sm btn-estado me-2 invisible">·</span>
+            {% endif %}
+
+            {# --- Nombre y estado --- #}
+            {% if alumno.id %}
+                <span class="alumno-nombre">
+                    {{ alumno.apellidos }} {{ alumno.nombres }}
+                    {% if alumno.es_baja %}
+                        <span class="badge bg-secondary ms-2">BAJA</span>
+                    {% endif %}
+                </span>
+                <span class="alumno-porcentaje fw-bold {{ alumno.porcentaje_clase }}" title="Porcentaje de asistencia">
+                    {{ alumno.porcentaje_texto }}
+                </span>
+                <input type="checkbox" class="form-check-input" name="asistencia" value="{{ alumno.id }}"
+                       data-es-baja="{{ '1' if alumno.es_baja else '0' }}"
+                       data-nombre="{{ alumno.apellidos }} {{ alumno.nombres }}"
+                    {% if alumno.id|string in presentes %}checked{% endif %}>
+            {% else %}
+                <span class="alumno-nombre text-muted">
+                    {{ alumno.apellidos }} {{ alumno.nombres }}
+                    <span class="badge bg-warning text-dark ms-2">Sin DNI cargado</span>
+                </span>
+                <span class="alumno-porcentaje"></span>
+                <input type="checkbox" class="form-check-input" disabled title="No se puede tomar asistencia: falta cargar el DNI de este alumno">
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if not alumnos %}
+            <div class="alert alert-info text-center">
+                No hay alumnos para mostrar con el filtro seleccionado.
+            </div>
+        {% endif %}
+
+        {% if atrasada %}
+        <div class="mt-4">
+            <label for="password" class="form-label">Contraseña de administrador</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="text-center mt-4">
+            <button type="submit" class="footer-btn">Guardar asistencia</button>
+        </div>
+    </form>
+
+    {% if not atrasada %}
+    <div class="text-center mt-3">
+        <a href="{{ url_for('asistencia.elegir_fecha_atrasada', curso=curso) }}" class="text-muted small">
+            ¿Necesitás cargar o revisar una fecha anterior?
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ==================================================== -->
+<!-- Modal de baja / reactivación                          -->
+<!-- ==================================================== -->
+<div class="modal fade" id="modalEstado" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" id="modalEstadoHeader">
+                <h5 class="modal-title" id="modalEstadoTitulo">Confirmar acción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="modalEstadoMensaje">—</p>
+                <div class="mb-3">
+                    <label for="modalEstadoPassword" class="form-label">Contraseña de administrador</label>
+                    <input type="password" class="form-control" id="modalEstadoPassword" autocomplete="off">
+                </div>
+                <div id="modalEstadoError" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn" id="modalEstadoConfirmar" onclick="confirmarModalEstado()">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de reactivación al guardar (se abre automáticamente cuando hay
+     algún alumno de baja marcado como presente) -->
+<div class="modal fade" id="modalReactivar" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">Alumnos dados de baja marcados como presentes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Marcaste como presentes a los siguientes alumnos que están dados de baja:</p>
+                <ul id="lista-reactivar"></ul>
+                <p>Para guardar la asistencia y reactivarlos, ingresá la contraseña de administrador:</p>
+                <div class="mb-3">
+                    <label for="modalReactivarPassword" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="modalReactivarPassword" autocomplete="off">
+                </div>
+                <div id="modalReactivarError" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cancelarReactivacion()">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="confirmarReactivacion()">
+                    Reactivar y guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // -------------------------------------------------------------------------
+    //  Filtro de estado
+    // -------------------------------------------------------------------------
+    function cambiarFiltro() {
+        const filtro = document.getElementById('filtro-estado').value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('estado', filtro);
+        window.location.href = url.toString();
+    }
+
+    // -------------------------------------------------------------------------
+    //  Modal de baja / reactivación (botón ❌ / ✅)
+    // -------------------------------------------------------------------------
+    let accionActual = null;
+    let dniActual = null;
+
+    function abrirModalEstado(dni, nombre, accion) {
+        accionActual = accion;
+        dniActual = dni;
+
+        const titulo = document.getElementById('modalEstadoTitulo');
+        const header = document.getElementById('modalEstadoHeader');
+        const mensaje = document.getElementById('modalEstadoMensaje');
+        const boton = document.getElementById('modalEstadoConfirmar');
+        const error = document.getElementById('modalEstadoError');
+        const pass = document.getElementById('modalEstadoPassword');
+
+        error.classList.add('d-none');
+        pass.value = '';
+
+        if (accion === 'baja') {
+            header.className = 'modal-header bg-danger text-white';
+            titulo.textContent = 'Dar de baja al alumno';
+            mensaje.innerHTML = `¿Confirmás dar de baja a <strong>${nombre}</strong> en este curso?`;
+            boton.className = 'btn btn-danger';
+            boton.textContent = 'Dar de baja';
+        } else {
+            header.className = 'modal-header bg-success text-white';
+            titulo.textContent = 'Reactivar alumno';
+            mensaje.innerHTML = `¿Confirmás reactivar a <strong>${nombre}</strong> en este curso?`;
+            boton.className = 'btn btn-success';
+            boton.textContent = 'Reactivar';
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEstado'));
+        modal.show();
+        setTimeout(() => pass.focus(), 300);
+    }
+
+    function confirmarModalEstado() {
+        const password = document.getElementById('modalEstadoPassword').value;
+        const error = document.getElementById('modalEstadoError');
+
+        if (!password) {
+            error.textContent = 'Ingresá la contraseña.';
+            error.classList.remove('d-none');
+            return;
+        }
+
+        const url = accionActual === 'baja'
+            ? "{{ url_for('asistencia.dar_de_baja', curso=curso) }}"
+            : "{{ url_for('asistencia.reactivar', curso=curso) }}";
+
+        const formData = new FormData();
+        formData.append('dni', dniActual);
+        formData.append('password', password);
+
+        fetch(url, { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    error.textContent = data.error || 'Error desconocido.';
+                    error.classList.remove('d-none');
+                }
+            })
+            .catch(err => {
+                error.textContent = 'Error de conexión: ' + err;
+                error.classList.remove('d-none');
+            });
+    }
+
+    // -------------------------------------------------------------------------
+    //  Guardado con intercepción de bajas marcadas como presentes
+    // -------------------------------------------------------------------------
+    let formEnviandoSinInterceptar = false;
+
+    document.getElementById('form-asistencia').addEventListener('submit', function (e) {
+        if (formEnviandoSinInterceptar) {
+            // Ya reactivamos todo; dejar pasar el submit normal.
+            return;
+        }
+
+        const checkboxesBaja = document.querySelectorAll(
+            'input[name="asistencia"][data-es-baja="1"]:checked'
+        );
+
+        if (checkboxesBaja.length === 0) {
+            // Nada raro, submit normal.
+            return;
+        }
+
+        // Frenamos el submit y mostramos el modal
+        e.preventDefault();
+
+        const pendientes = Array.from(checkboxesBaja).map(cb => ({
+            dni: cb.value,
+            nombre: cb.dataset.nombre || cb.value,
+        }));
+
+        const lista = document.getElementById('lista-reactivar');
+        lista.innerHTML = pendientes.map(r => `<li>${r.nombre}</li>`).join('');
+
+        document.getElementById('modalReactivarPassword').value = '';
+        document.getElementById('modalReactivarError').classList.add('d-none');
+
+        // Guardamos pendientes en el modal mismo (con dataset)
+        const modalEl = document.getElementById('modalReactivar');
+        modalEl.dataset.pendientes = JSON.stringify(pendientes);
+
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        setTimeout(() => document.getElementById('modalReactivarPassword').focus(), 300);
+    });
+
+    function cancelarReactivacion() {
+        const modalEl = document.getElementById('modalReactivar');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+    }
+
+    async function confirmarReactivacion() {
+        const modalEl = document.getElementById('modalReactivar');
+        const password = document.getElementById('modalReactivarPassword').value;
+        const error = document.getElementById('modalReactivarError');
+
+        if (!password) {
+            error.textContent = 'Ingresá la contraseña.';
+            error.classList.remove('d-none');
+            return;
+        }
+
+        const pendientes = JSON.parse(modalEl.dataset.pendientes || '[]');
+
+        // Reactivamos a TODOS antes de guardar
+        for (const r of pendientes) {
+            const formData = new FormData();
+            formData.append('dni', r.dni);
+            formData.append('password', password);
+
+            try {
+                const resp = await fetch(
+                    "{{ url_for('asistencia.reactivar', curso=curso) }}",
+                    { method: 'POST', body: formData }
+                );
+                const data = await resp.json();
+                if (!data.success) {
+                    error.textContent = `Error reactivando a ${r.nombre}: ${data.error}`;
+                    error.classList.remove('d-none');
+                    return;
+                }
+            } catch (err) {
+                error.textContent = 'Error de conexión: ' + err;
+                error.classList.remove('d-none');
+                return;
+            }
+        }
+
+        // Si hay campo password en el form (fecha atrasada), lo llenamos
+        const passInput = document.getElementById('password');
+        if (passInput) {
+            passInput.value = password;
+        }
+
+        // Ocultamos modal y enviamos el form saltando la intercepción
+        bootstrap.Modal.getInstance(modalEl).hide();
+        formEnviandoSinInterceptar = true;
+        document.getElementById('form-asistencia').submit();
+    }
+</script>
+{% endblock %}

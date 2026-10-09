@@ -1,0 +1,229 @@
+{% extends "layout.html" %}
+{% block title %}Días especiales{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 mb-5 px-3 px-md-4">
+
+    <h2 class="mb-4">📅 Días especiales</h2>
+
+    <!-- ============================ -->
+    <!-- Formulario                    -->
+    <!-- ============================ -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Registrar un día especial</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('dias_especiales.guardar') }}">
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="tipo" class="form-label">Tipo</label>
+                        <select class="form-select" id="tipo" name="tipo" required onchange="actualizarCampos()">
+                            <option value="">-- Seleccione tipo --</option>
+                            <option value="feriado">Feriado</option>
+                            <option value="ausencia">Ausencia de profesor</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="fecha" class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" required>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1" id="bloque-ausencia" style="display:none;">
+                    <div class="col-md-4">
+                        <label for="curso" class="form-label">Curso</label>
+                        <select class="form-select" id="curso" name="curso" onchange="actualizarProfesor()">
+                            <option value="">-- Seleccione curso --</option>
+                            {% for c in cursos %}
+                                <option value="{{ c.ID_CURSO }}"
+                                        data-profesor="{{ c.PROFESOR }}"
+                                        data-nick="{{ c.NICK }}">
+                                    {{ c.CURSO }} {% if c.NICK %}({{ c.NICK }}){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="profesor_mostrar" class="form-label">Profesor</label>
+                        <!-- Solo lectura: se autocompleta desde el curso elegido.
+                             El backend igual lo toma de la hoja Cursos. -->
+                        <input type="text" class="form-control" id="profesor_mostrar"
+                               readonly tabindex="-1" placeholder="(se completa al elegir curso)">
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label for="motivo" class="form-label">Motivo</label>
+                        <input type="text" class="form-control" id="motivo" name="motivo" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================ -->
+    <!-- Feriados registrados          -->
+    <!-- ============================ -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-2">
+                <span>Feriados registrados ({{ total_feriados }})</span>
+                <form class="d-flex flex-wrap gap-2" method="GET" action="{{ url_for('dias_especiales.index') }}">
+                    <input type="date" class="form-control form-control-sm"
+                        name="feriado_fecha" value="{{ filtro_feriado_fecha }}"
+                        style="width:auto; max-width:100%;">
+                    <button class="btn btn-sm btn-light">Filtrar</button>
+                    {% if filtro_feriado_fecha %}
+                        <a href="{{ url_for('dias_especiales.index') }}"
+                        class="btn btn-sm btn-outline-light">✖</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if feriados %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Motivo</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in feriados %}
+                            <tr>
+                                <td>{{ f.fecha_mostrar }}</td>
+                                <td>{{ f.motivo }}</td>
+                                <td class="text-end">
+                                    <form method="POST"
+                                          action="{{ url_for('dias_especiales.borrar_feriado') }}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('¿Eliminar el feriado del {{ f.fecha_mostrar }}?');">
+                                        <input type="hidden" name="fecha" value="{{ f.fecha_original }}">
+                                        <button class="btn btn-sm btn-outline-danger" title="Eliminar">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">
+                    {% if filtro_feriado_fecha %}
+                        No hay feriados que coincidan con el filtro.
+                    {% else %}
+                        No hay feriados registrados todavía.
+                    {% endif %}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ============================ -->
+    <!-- Ausencias registradas         -->
+    <!-- ============================ -->
+    <div class="card-header bg-secondary text-white">
+        <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-2">
+            <span>Ausencias de profesores registradas ({{ total_ausencias }})</span>
+            <form class="d-flex flex-wrap gap-2" method="GET" action="{{ url_for('dias_especiales.index') }}">
+                <input type="date" class="form-control form-control-sm"
+                    name="ausencia_fecha" value="{{ filtro_ausencia_fecha }}"
+                    style="width:auto; max-width:100%;">
+                <select class="form-select form-select-sm" name="ausencia_curso" style="width:auto; max-width:100%;">
+                    <option value="">-- Todos los cursos --</option>
+                    {% for c in cursos %}
+                        <option value="{{ c.ID_CURSO }}"
+                                {% if filtro_ausencia_curso == c.ID_CURSO|string %}selected{% endif %}>
+                            {{ c.CURSO }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-sm btn-light">Filtrar</button>
+                {% if filtro_ausencia_fecha or filtro_ausencia_curso %}
+                    <a href="{{ url_for('dias_especiales.index') }}"
+                    class="btn btn-sm btn-outline-light">✖</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+        <div class="card-body">
+            {% if ausencias %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Curso</th>
+                                <th>Profesor</th>
+                                <th>Motivo</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in ausencias %}
+                            <tr>
+                                <td>{{ a.fecha_mostrar }}</td>
+                                <td>{{ a.curso_nombre }} {% if a.curso_nick %}<small class="text-muted">({{ a.curso_nick }})</small>{% endif %}</td>
+                                <td>{{ a.profesor }}</td>
+                                <td>{{ a.motivo }}</td>
+                                <td class="text-end">
+                                    <form method="POST"
+                                          action="{{ url_for('dias_especiales.borrar_ausencia') }}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('¿Eliminar la ausencia del {{ a.fecha_mostrar }} para {{ a.curso_nombre }}?');">
+                                        <input type="hidden" name="fecha" value="{{ a.fecha_original }}">
+                                        <input type="hidden" name="curso_id" value="{{ a.curso_id }}">
+                                        <button class="btn btn-sm btn-outline-danger" title="Eliminar">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">
+                    {% if filtro_ausencia_fecha or filtro_ausencia_curso %}
+                        No hay ausencias que coincidan con los filtros.
+                    {% else %}
+                        No hay ausencias registradas todavía.
+                    {% endif %}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function actualizarCampos() {
+        const tipo = document.getElementById('tipo').value;
+        const bloque = document.getElementById('bloque-ausencia');
+        const curso = document.getElementById('curso');
+        const profesor = document.getElementById('profesor_mostrar');
+
+        if (tipo === 'ausencia') {
+            bloque.style.display = 'flex';
+            curso.required = true;
+        } else {
+            bloque.style.display = 'none';
+            curso.required = false;
+            profesor.value = '';
+        }
+    }
+
+    function actualizarProfesor() {
+        const curso = document.getElementById('curso');
+        const profesor = document.getElementById('profesor_mostrar');
+        const opt = curso.options[curso.selectedIndex];
+        profesor.value = opt ? (opt.dataset.profesor || '') : '';
+    }
+</script>
+{% endblock %}

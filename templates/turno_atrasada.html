@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cargar asistencia atrasada - Turno {{ nombre_turno }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="home-icon">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">🏠</a>
+    </div>
+
+    <div class="container mt-5">
+        <h2 class="text-center mb-2">Cargar asistencia atrasada</h2>
+        <p class="text-center text-muted mb-4">Turno {{ nombre_turno }} — se muestran todos los cursos, estén o no en horario ahora mismo.</p>
+
+        <div class="row">
+            {% for curso in cursos %}
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center bg-dark text-light">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ curso.nick }}</h5>
+                            <p class="card-text">
+                                Profesor: {{ curso.profesor }} <br>
+                                Horario habitual: {{ curso.inicio }} - {{ curso.fin }}
+                            </p>
+                            <a href="{{ url_for('asistencia.elegir_fecha_atrasada', curso=curso.id) }}" class="btn btn-warning">
+                                Elegir fecha atrasada
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('turnos.turnos') }}" class="btn btn-secondary">⬅️ Volver a turnos</a>
+        </div>
+    </div>
+</body>
+</html>

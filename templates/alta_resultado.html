@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+
+{% block title %}Resultado Alta{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-success">{{ mensaje }}</h2>
+    <a href="{{ url_for('altas_bajas_modificaciones_alumnos.index') }}" class="btn btn-primary mt-3">Volver a alumnos</a>
+</div>
+{% endblock %}

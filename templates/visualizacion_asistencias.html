@@ -1,0 +1,351 @@
+<!-- templates\visualizacion_asistencias.html -->
+ {% extends "layout.html" %}
+
+{% block title %}Registro de Asistencia{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Registro de Asistencia</h3>
+
+    <!-- Filtros -->
+    <div class="row mb-3">
+        <!-- Turno -->
+        <div class="col-md-3">
+            <label for="turno" class="form-label">Turno</label>
+            <select class="form-select" id="turno" name="turno" onchange="filtrarCursosPorTurno()">
+                <option value="" selected disabled>-- Seleccione turno --</option>
+                <option value="M">Mañana</option>
+                <option value="T">Tarde</option>
+                <option value="V">Vespertino</option>
+            </select>
+        </div>
+
+        <!-- Curso -->
+        <div class="col-md-4">
+            <label for="curso" class="form-label">Curso</label>
+            <select class="form-select" id="curso" name="curso" onchange="actualizarVista(), cargarFechasConDatos(this.value)">
+                <option value="" selected disabled>-- Seleccione curso --</option>
+                {% for curso in cursos %}
+                    <option value="{{ curso['ID_CURSO'] }}" data-turno="{{ curso['TURNO'] }}">{{ curso['NICK'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Fecha -->
+        <div class="col-md-4">
+            <label for="fecha" class="form-label">Fecha</label>
+            <input type="text" class="form-control" id="fecha" name="fecha">
+        </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="d-flex justify-content-between mb-3">
+        <div class="card text-center bg-success text-white p-2 flex-fill mx-1">
+            <strong>Presentes</strong><br><span id="presentes">0</span>
+        </div>
+        <div class="card text-center bg-danger text-white p-2 flex-fill mx-1">
+            <strong>Ausentes</strong><br><span id="ausentes">0</span>
+        </div>
+        <div class="card text-center bg-info text-white p-2 flex-fill mx-1">
+            <strong>Justificados</strong><br><span id="justificados">0</span>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Alumno</th>
+            <th>Estado</th>
+            <th>Justificación</th>
+            <th>Acción</th>
+            <th>Asistencia %</th> <!-- nueva columna -->
+        </tr>
+    </thead>
+    <tbody id="tablaAlumnos">
+    </tbody>
+</table>
+
+
+<!--     <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Alumno</th>
+                <th>Estado</th>
+                <th>Justificación</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="tablaAlumnos">
+        </tbody>
+    </table> -->
+
+    <!-- Botones inferiores -->
+    <div class="d-flex justify-content-between mt-4">
+        <button class="btn btn-secondary">← Volver</button>
+        <button class="btn btn-info">Ver curso completo</button>
+        <button class="btn btn-primary">Exportar</button>
+    </div>
+</div>
+
+<!-- Modal Acción -->
+<div class="modal fade" id="modalAccion" tabindex="-1" aria-labelledby="modalAccionLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Acción sobre alumno</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Seleccione la acción a realizar:</p>
+        <button class="btn btn-outline-info w-100 mb-2" onclick="abrirJustificar()">📝 Justificar día</button>
+        <button class="btn btn-outline-danger w-100" onclick="abrirBaja()">⛔ Dar de baja</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- {% for alumno in alumnos %}
+<div class="card mt-4">
+  <div class="card-body">
+    <h5 class="card-title">{{ alumno.apellido }} {{ alumno.nombre }}</h5>
+    <p><strong>DNI:</strong> {{ alumno.dni }}</p>
+    <p><strong>Curso:</strong> {{ alumno.curso }}</p>
+    <p><strong>Cuatrimestre:</strong> {{ alumno.cuatrimestre }}</p>
+    <p><strong>Año:</strong> {{ alumno.anio }}</p>
+
+    <div class="mt-3 d-flex justify-content-between align-items-center">
+      <div>
+        <a href="{{ url_for('altas_bajas_modificaciones_alumnos.modificar', dni=alumno.dni) }}" class="btn btn-warning">Modificar</a>
+        <a href="{{ url_for('altas_bajas_modificaciones_alumnos.baja', dni=alumno.dni) }}" class="btn btn-danger">Dar de baja</a>
+      </div>
+      <div>
+        <a href="#" class="text-primary">{{ alumno.asistencia}}</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %} -->
+
+
+<!-- Modal Justificar -->
+<div class="modal fade" id="modalJustificar" tabindex="-1" aria-labelledby="modalJustificarLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Justificar ausencia</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formJustificar">
+          <input type="hidden" id="alumnoId">
+          <div class="mb-3">
+            <label for="alumnoNombre" class="form-label">Alumno</label>
+            <input type="text" class="form-control" id="alumnoNombre" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="motivo" class="form-label">Motivo</label>
+            <textarea class="form-control" id="motivo" rows="3" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Guardar justificación</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Baja -->
+<div class="modal fade" id="modalBaja" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Dar de baja alumno</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formBaja">
+          <input type="hidden" id="alumnoIdBaja" name="alumnoId">
+          <div class="mb-3">
+            <label for="alumnoNombreBaja" class="form-label">Alumno</label>
+            <input type="text" class="form-control" id="alumnoNombreBaja" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="passwordBaja" class="form-label">Contraseña de administrador</label>
+            <input type="password" name="password" class="form-control" id="passwordBaja" required>
+          </div>
+          <button type="submit" class="btn btn-danger w-100">Confirmar baja</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let fechasConDatos = [];
+
+function filtrarCursosPorTurno() {
+    const turno = document.getElementById("turno").value;
+    const cursoSelect = document.getElementById("curso");
+
+    Array.from(cursoSelect.options).forEach(opt => {
+        if (!opt.value) return;
+        opt.style.display = (opt.getAttribute("data-turno") === turno) ? "block" : "none";
+    });
+    cursoSelect.value = "";
+}
+
+function cargarFechasConDatos(curso) {
+    fetch(`/visualizacion/fechas?curso=${curso}`)
+        .then(res => res.json())
+        .then(fechas => {
+            fechasConDatos = fechas;
+            inicializarCalendario();
+        });
+}
+
+function inicializarCalendario() {
+    flatpickr("#fecha", {
+        dateFormat: "Y-m-d",   // para enviar al backend
+        locale: "es",
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+            // Convertir la fecha del día a dd/mm/yyyy
+            const fecha = dayElem.dateObj.toLocaleDateString("es-AR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric"
+            });
+            if (fechasConDatos.includes(fecha)) {
+                dayElem.classList.add("fecha-con-asistencia");
+            }
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+            actualizarVista();
+        }
+    });
+}
+
+function actualizarVista() {
+    const curso = document.getElementById("curso").value;
+    const fecha = document.getElementById("fecha").value;
+
+    // Si no hay filtros seleccionados, limpiar tabla y salir
+    if (!curso || !fecha) {
+        document.getElementById("tablaAlumnos").innerHTML = "";
+        document.getElementById("presentes").innerText = 0;
+        document.getElementById("ausentes").innerText = 0;
+        document.getElementById("justificados").innerText = 0;
+        return;
+    }
+
+    fetch(`/visualizacion/datos?curso=${curso}&fecha=${fecha}`)
+        .then(res => res.json())
+        .then(alumnos => {
+            let presentes=0, ausentes=0, justificados=0;
+            const tbody = document.getElementById("tablaAlumnos");
+            tbody.innerHTML = "";
+
+            alumnos.forEach(a => {
+                let tr = document.createElement("tr");
+                let estadoTxt="", estadoClass="";
+                if (a.estado==="P") {estadoTxt="Presente"; estadoClass="text-success"; presentes++;}
+                else if (a.estado==="J") {estadoTxt="Justificado"; estadoClass="text-info"; justificados++;}
+                else {estadoTxt="Ausente"; estadoClass="text-danger"; ausentes++;}
+
+                let botonAccion = "";
+                if (a.estado === "A") {
+                    botonAccion = `<button class="btn btn-sm btn-outline-primary" onclick="prepararAccion('${a.nombre}', '${a.id}')">📝 Acción</button>`;
+                }
+
+                tr.innerHTML = `
+                    <td>${a.nombre}</td>
+                    <td class="${estadoClass} fw-bold">${estadoTxt}</td>
+                    <td>${a.justificacion || ""}</td>
+                    <td>${botonAccion}</td>
+                    <td class="text-primary">${a.asistencia || ""}</td> <!-- porcentaje -->
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById("presentes").innerText = presentes;
+            document.getElementById("ausentes").innerText = ausentes;
+            document.getElementById("justificados").innerText = justificados;
+        });
+}
+
+
+function prepararJustificar(nombre) {
+    document.getElementById("alumnoNombre").value = nombre;
+    document.getElementById("alumnoId").value = nombre;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    inicializarCalendario();
+});
+
+function prepararAccion(nombre, id) {
+    document.getElementById("alumnoNombre").value = nombre;
+    document.getElementById("alumnoId").value = id;
+    document.getElementById("alumnoNombreBaja").value = nombre;
+    document.getElementById("alumnoIdBaja").value = id;
+    // abrir modal principal
+    new bootstrap.Modal(document.getElementById("modalAccion")).show();
+}
+
+function abrirJustificar() {
+    new bootstrap.Modal(document.getElementById("modalJustificar")).show();
+    bootstrap.Modal.getInstance(document.getElementById("modalAccion")).hide();
+}
+
+function abrirBaja() {
+    new bootstrap.Modal(document.getElementById("modalBaja")).show();
+    bootstrap.Modal.getInstance(document.getElementById("modalAccion")).hide();
+}
+
+document.getElementById("formJustificar").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const data = new FormData(this);
+    data.append("curso", document.getElementById("curso").value);
+    data.append("fecha", document.getElementById("fecha").value);
+    data.append("alumnoId", document.getElementById("alumnoId").value);
+    data.append("motivo", document.getElementById("motivo").value);
+
+    fetch("/visualizacion/justificar", {
+        method: "POST",
+        body: data
+    })
+    .then(res => res.json())
+    .then(resp => {
+        if (resp.success) {
+            // cerrar modal
+            bootstrap.Modal.getInstance(document.getElementById("modalJustificar")).hide();
+            // refrescar tabla
+            actualizarVista();
+        }
+    });
+});
+
+document.getElementById("formBaja").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const data = new FormData(this);
+    data.append("curso", document.getElementById("curso").value);
+    data.append("fecha", document.getElementById("fecha").value);
+
+    fetch("/visualizacion/baja", {
+        method: "POST",
+        body: data
+    })
+    .then(res => res.json())
+    .then(resp => {
+        if (resp.success) {
+            bootstrap.Modal.getInstance(document.getElementById("modalBaja")).hide();
+            actualizarVista();
+        } else {
+            alert(resp.error || "Error al dar de baja");
+        }
+    });
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block title %}Cargar asistencia atrasada{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 480px;">
+    <h3 class="text-primary">Cargar asistencia atrasada</h3>
+    <p class="text-muted">
+        Elegí la fecha que querés cargar o revisar para el curso <strong>{{ curso }}</strong>.
+        La contraseña de administrador se va a pedir recién al momento de guardar.
+    </p>
+
+    <form method="GET" action="{{ url_for('asistencia.asistencia', curso=curso) }}">
+        <div class="mb-3">
+            <label for="fecha" class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="fecha" name="fecha" value="{{ hoy }}" max="{{ hoy }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Continuar</button>
+    </form>
+
+    <div class="text-center mt-3">
+        <a href="{{ url_for('asistencia.asistencia', curso=curso) }}" class="text-muted small">
+            ← Volver a la asistencia de hoy
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,228 @@
+{% extends "layout.html" %}
+{% block title %}Administrar alumnos{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 mb-5 px-3 px-md-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="mb-0">👥 Administrar alumnos</h2>
+        <a href="{{ url_for('admin_alumnos.alta') }}" class="btn btn-success">
+            + Nuevo alumno
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <form method="GET" action="{{ url_for('admin_alumnos.index') }}"
+                  class="row g-2 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small mb-1">Curso</label>
+                    <select name="curso" class="form-select form-select-sm">
+                        <option value="">-- Todos los cursos --</option>
+                        {% for c in cursos %}
+                            <option value="{{ c.id }}"
+                                    {% if filtro_curso == c.id %}selected{% endif %}>
+                                {{ c.curso }}{% if c.nick %} ({{ c.nick }}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small mb-1">Estado</label>
+                    <select name="estado" class="form-select form-select-sm">
+                        <option value="activos" {% if filtro_estado == 'activos' %}selected{% endif %}>Solo activos</option>
+                        <option value="bajas" {% if filtro_estado == 'bajas' %}selected{% endif %}>Solo bajas</option>
+                        <option value="todos" {% if filtro_estado == 'todos' %}selected{% endif %}>Todos</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label small mb-1">Buscar</label>
+                    <input type="text" name="q" class="form-control form-control-sm"
+                           placeholder="DNI, apellido o nombre..." value="{{ busqueda }}">
+                </div>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button class="btn btn-sm btn-primary w-100">Filtrar</button>
+                    <a href="{{ url_for('admin_alumnos.index') }}"
+                       class="btn btn-sm btn-outline-secondary">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="small text-muted">
+            {{ total }} alumno{% if total != 1 %}s{% endif %} encontrado{% if total != 1 %}s{% endif %}
+        </span>
+    </div>
+
+    {% if alumnos %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle bg-white">
+            <thead class="table-light">
+                <tr>
+                    <th>DNI</th>
+                    <th>Apellidos, Nombres</th>
+                    <th>Curso</th>
+                    <th>Cuat.</th>
+                    <th>Año</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alumnos %}
+                <tr class="{% if a.es_baja %}table-secondary{% endif %}">
+                    <td>
+                        {% if a.sin_dni %}
+                            <span class="badge bg-warning text-dark">Sin DNI</span>
+                        {% else %}
+                            {{ a.dni }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ a.apellidos }}, {{ a.nombres }}
+                        {% if a.es_baja %}
+                            <span class="badge bg-secondary ms-2">BAJA</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ a.curso_nombre }}
+                        {% if a.curso_nick %}<small class="text-muted">({{ a.curso_nick }})</small>{% endif %}
+                    </td>
+                    <td>{{ a.cuatrimestre }}</td>
+                    <td>{{ a.anio }}</td>
+                    <td class="text-end">
+                        {% if not a.sin_dni %}
+                            <a href="{{ url_for('admin_alumnos.editar', dni=a.dni, curso=a.curso_id) }}"
+                               class="btn btn-sm btn-outline-primary" title="Editar">
+                                ✏️
+                            </a>
+                            {% if a.es_baja %}
+                                <button type="button" class="btn btn-sm btn-outline-success"
+                                        title="Reactivar"
+                                        onclick="abrirModalEstado('{{ a.dni }}', '{{ a.curso_id }}', '{{ a.apellidos }}, {{ a.nombres }}', 'reactivar')">
+                                    ✅
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        title="Dar de baja"
+                                        onclick="abrirModalEstado('{{ a.dni }}', '{{ a.curso_id }}', '{{ a.apellidos }}, {{ a.nombres }}', 'baja')">
+                                    ❌
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            No se encontraron alumnos con los filtros aplicados.
+        </div>
+    {% endif %}
+
+</div>
+
+<!-- Modal de baja/reactivación -->
+<div class="modal fade" id="modalEstado" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" id="modalEstadoHeader">
+                <h5 class="modal-title" id="modalEstadoTitulo">Confirmar acción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="modalEstadoMensaje">—</p>
+                <div class="mb-3">
+                    <label for="modalEstadoPassword" class="form-label">Contraseña de administrador</label>
+                    <input type="password" class="form-control" id="modalEstadoPassword" autocomplete="off">
+                </div>
+                <div id="modalEstadoError" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn" id="modalEstadoConfirmar" onclick="confirmarModalEstado()">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let accionActual = null;
+    let dniActual = null;
+    let cursoActual = null;
+
+    function abrirModalEstado(dni, cursoId, nombre, accion) {
+        accionActual = accion;
+        dniActual = dni;
+        cursoActual = cursoId;
+
+        const titulo = document.getElementById('modalEstadoTitulo');
+        const header = document.getElementById('modalEstadoHeader');
+        const mensaje = document.getElementById('modalEstadoMensaje');
+        const boton = document.getElementById('modalEstadoConfirmar');
+        const error = document.getElementById('modalEstadoError');
+        const pass = document.getElementById('modalEstadoPassword');
+
+        error.classList.add('d-none');
+        pass.value = '';
+
+        if (accion === 'baja') {
+            header.className = 'modal-header bg-danger text-white';
+            titulo.textContent = 'Dar de baja al alumno';
+            mensaje.innerHTML = `¿Confirmás dar de baja a <strong>${nombre}</strong>?`;
+            boton.className = 'btn btn-danger';
+            boton.textContent = 'Dar de baja';
+        } else {
+            header.className = 'modal-header bg-success text-white';
+            titulo.textContent = 'Reactivar alumno';
+            mensaje.innerHTML = `¿Confirmás reactivar a <strong>${nombre}</strong>?`;
+            boton.className = 'btn btn-success';
+            boton.textContent = 'Reactivar';
+        }
+
+        new bootstrap.Modal(document.getElementById('modalEstado')).show();
+        setTimeout(() => pass.focus(), 300);
+    }
+
+    function confirmarModalEstado() {
+        const password = document.getElementById('modalEstadoPassword').value;
+        const error = document.getElementById('modalEstadoError');
+
+        if (!password) {
+            error.textContent = 'Ingresá la contraseña.';
+            error.classList.remove('d-none');
+            return;
+        }
+
+        const url = accionActual === 'baja'
+            ? "{{ url_for('admin_alumnos.baja') }}"
+            : "{{ url_for('admin_alumnos.reactivar') }}";
+
+        const fd = new FormData();
+        fd.append('dni', dniActual);
+        fd.append('curso', cursoActual);
+        fd.append('password', password);
+
+        fetch(url, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    error.textContent = data.error || 'Error desconocido.';
+                    error.classList.remove('d-none');
+                }
+            })
+            .catch(err => {
+                error.textContent = 'Error de conexión: ' + err;
+                error.classList.remove('d-none');
+            });
+    }
+</script>
+{% endblock %}
