@@ -1,20 +1,46 @@
 # backup_diario.py
 """
-Script standalone para hacer un backup sin arrancar la app web.
+Script standalone para hacer un backup diario de la planilla.
 
 Está pensado para ser ejecutado desde el Programador de Tareas de Windows
-una vez por día.
+una vez por día (por ejemplo, a las 12:00 del mediodía).
 
 Uso:
     python backup_diario.py
 
-Guarda el resultado en un log dentro de instance/backups/backup_diario.log.
+Reglas:
+  - Solo hace UN backup por día. Si ya hay uno con la fecha de hoy,
+    no hace nada (y sale con código 0).
+  - El log se guarda en logs/backup_diario.log.
+  - Si algo falla, sale con código != 0 (para que el Programador de
+    Tareas lo registre como fallido).
+
+Códigos de salida:
+  0 = backup exitoso, o ya había backup hoy (nada que hacer)
+  1 = el backup falló
+  2 = error inesperado
 """
 
 import sys
 import traceback
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
+
+
+def _ya_hay_backup_de_hoy(carpeta_entorno):
+    """
+    ¿Ya hay una carpeta de backup creada hoy?
+    Los backups se llaman 'YYYY-MM-DD_HH-MM-SS'. Chequeamos que el prefijo
+    de la fecha sea el de hoy.
+    """
+    if not carpeta_entorno.exists():
+        return False
+
+    hoy = date.today().strftime("%Y-%m-%d")
+    for d in carpeta_entorno.iterdir():
+        if d.is_dir() and d.name.startswith(hoy + "_"):
+            return True
+    return False
 
 
 def main():
@@ -29,10 +55,9 @@ def main():
             f.write(linea + "\n")
 
     log("=" * 60)
-    log("Iniciando backup diario automático")
+    log("Iniciando backup diario automatico")
 
     try:
-        # Importar la app para tener contexto de Flask (config, etc.)
         from flask import Flask
         from config import Config
 
@@ -42,37 +67,45 @@ def main():
         with app.app_context():
             from services import backup
 
-            # Chequear que los backups estén activos
+            # ¿Backups activos?
             if not app.config.get("BACKUP_ACTIVO", True):
-                log("⚠️ Backups desactivados (BACKUP_ACTIVO=False). Nada que hacer.")
+                log("[AVISO] Backups desactivados (BACKUP_ACTIVO=False). Nada que hacer.")
                 return 0
 
-            # Hacer el backup
-            log(f"Entorno: {app.config.get('ENTORNO')}")
+            entorno = app.config.get("ENTORNO", "produccion")
+            log(f"Entorno: {entorno}")
             log(f"Planilla: {app.config.get('SPREADSHEET_NOMBRE')}")
-            log("Ejecutando backup...")
 
-            resultado = backup.hacer_backup(motivo="automático-diario")
+            # ¿Ya hay backup de hoy?
+            carpeta_local_base = raiz / app.config.get("BACKUP_CARPETA_LOCAL", "instance/backups")
+            carpeta_hoy = carpeta_local_base / entorno
+            if _ya_hay_backup_de_hoy(carpeta_hoy):
+                log("[SALTAR] Ya existe un backup de hoy. No se hace otro.")
+                return 0
+
+            # Hacer backup
+            log("Ejecutando backup...")
+            resultado = backup.hacer_backup(motivo="diario")
 
             if resultado["ok"]:
-                log(f"✅ Backup exitoso: {resultado['nombre_backup']}")
+                log(f"[OK] Backup exitoso: {resultado['nombre_backup']}")
                 if resultado["local_path"]:
-                    log(f"   Local: {resultado['local_path']}")
+                    log(f"     Local: {resultado['local_path']}")
                 if resultado["drive_link"]:
-                    log(f"   Drive: {resultado['drive_link']}")
+                    log(f"     Drive: {resultado['drive_link']}")
                 if resultado["borrados_local"]:
-                    log(f"   Se borraron {resultado['borrados_local']} backups viejos (local)")
+                    log(f"     Se borraron {resultado['borrados_local']} backups viejos (local)")
                 if resultado["borrados_drive"]:
-                    log(f"   Se borraron {resultado['borrados_drive']} backups viejos (Drive)")
+                    log(f"     Se borraron {resultado['borrados_drive']} backups viejos (Drive)")
                 return 0
             else:
-                log("❌ El backup falló:")
+                log("[ERROR] El backup fallo:")
                 for err in resultado["errores"]:
-                    log(f"   - {err}")
+                    log(f"     - {err}")
                 return 1
 
     except Exception as e:
-        log(f"❌ Error inesperado: {e}")
+        log(f"[ERROR] Error inesperado: {e}")
         log(traceback.format_exc())
         return 2
 
