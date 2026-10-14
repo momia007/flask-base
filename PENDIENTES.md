@@ -71,6 +71,58 @@ pero no se guardan.
 
 ---
 
+## 🔴 Alta prioridad
+
+### Gestión de cursos (ABM completo)
+Contexto: hoy los cursos se cargan y editan directamente en Google Sheets.
+No hay pantalla en la app para que un operador pueda crear, editar o dar de
+baja un curso. Cada cambio requiere abrir Sheets a mano, con riesgo de
+romper fórmulas o columnas.
+
+Un curso tiene: ID_CURSO, CURSO (nombre largo), NICK (nombre corto),
+TURNO (M/T/V), LU..VI (días de clase), INICIO, FIN, PROFESOR,
+INICIO_CICLO, y posiblemente CUPO (si se agrega en el futuro).
+
+- [ ] Módulo `/admin/cursos` con listado filtrable:
+      - Filtro por turno (Mañana/Tarde/Vespertino).
+      - Filtro por estado activo/inactivo (si se agrega columna).
+      - Búsqueda por nombre o nick.
+- [ ] Alta de curso nuevo:
+      - Formulario con todos los campos.
+      - Validaciones: ID único, días de la semana al menos uno,
+        INICIO < FIN, INICIO_CICLO con formato de fecha.
+      - Al crear, se agrega la fila a la hoja `Cursos` con los mismos
+        encabezados.
+- [ ] Edición de curso existente:
+      - Editar todos los campos menos ID_CURSO (es la clave).
+      - Verificar que no rompa las relaciones con `Alumnos` y `Asistencias`
+        (el ID_CURSO se mantiene).
+- [ ] Baja / reactivación de curso:
+      - ¿Qué significa dar de baja un curso?
+        - Opción A: nueva columna `ESTADO` en `Cursos` (A/B), igual que
+          en `Alumnos`. Los cursos dados de baja no aparecen en las
+          pantallas de toma de lista ni en el import.
+        - Opción B: borrar la fila (peligroso, rompe referencias).
+        - **Recomendado: Opción A** (consistente con `Alumnos`).
+- [ ] Duplicar curso (útil para arrancar un cuatrimestre nuevo copiando
+      la estructura de un curso viejo, cambiando fechas y cuatrimestre).
+- [ ] Validaciones antes de dar de baja un curso:
+      - ¿Tiene alumnos activos? Avisar y permitir forzar.
+      - ¿Tiene asistencias cargadas? Preservar (no se borran).
+- [ ] Documentación en la pantalla: explicar qué significa cada columna
+      (para que el operador sepa qué llenar).
+
+Riesgos a manejar:
+- Al crear/editar un curso, invalidar el caché de `Cursos` para que la
+  app lo vea al instante.
+- Al cambiar `PROFESOR` de un curso, verificar que las `Ausencias_Profesores`
+  ya cargadas mantengan el profesor viejo (histórico) o se actualicen
+  (no hay una respuesta única, evaluar).
+- Al cambiar días/horarios, las asistencias viejas no se recalculan
+  (el porcentaje se calcula con los días actuales del curso, no con los
+  de la fecha de la asistencia).
+
+
 ## 🟡 Media prioridad
 
 ### Lista de espera

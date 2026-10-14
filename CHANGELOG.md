@@ -6,6 +6,38 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+
+
+## [1.2.2] - 2026-10-14
+
+### Agregado
+- **README.md completo**: documentación del proyecto con
+  arquitectura, instalación desde cero, configuración de Google
+  Sheets, configuración del servicio NSSM, tarea programada de
+  backup, despliegue, mantenimiento, solución de problemas frecuentes,
+  estructura del código y detalle del cálculo del porcentaje.
+
+### Cambiado
+- `update_server.bat`: agregado el parámetro `/IS` al `robocopy` para
+  forzar la copia de archivos aunque las fechas digan que son iguales.
+  Esto evita el bug de "archivos no copiados por fechas raras" que se
+  detectó durante el despliegue de la v1.2.0.
+
+### Corregido
+- Nada (esta versión es de documentación y ajustes menores).
+
+## [1.2.1] - 2026-10-13
+
+### Agregado
+- Script `instalar_tarea_backup.bat` para registrar la tarea programada
+  del backup diario en Windows (12:00 todos los días).
+
+### Cambiado
+- `backup_diario.py`: ahora hace solo un backup por día (si ya existe uno
+  con la fecha de hoy, no crea otro).
+- Logs de `backup_diario.py` sin emojis ni acentos, para evitar
+  problemas de encoding en la consola de Windows.
+
 ## [1.2.0] - 2026-10-09
 
 ### Agregado

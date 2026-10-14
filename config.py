@@ -115,7 +115,7 @@ SPREADSHEET_ID = _spreadsheet_id_activo()
 #  No afectan al funcionamiento, solo a lo que ve el usuario.
 
 APP_NOMBRE = _valor("APP_NOMBRE", "Centro de Formación")
-APP_VERSION = _valor("APP_VERSION", "1.2.0")
+APP_VERSION = _valor("APP_VERSION", "1.2.2")
 
 
 # -----------------------------------------------------------------------------
