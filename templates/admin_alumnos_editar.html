@@ -2,7 +2,7 @@
 {% block title %}Editar alumno{% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5" style="max-width: 720px;">
+<div class="container mt-4 mb-5" style="max-width: 900px;">
 
     <h2 class="mb-4">✏️ Editar alumno</h2>
 
@@ -15,24 +15,240 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ url_for('admin_alumnos.editar') }}">
+    <form method="POST" action="{{ url_for('admin_alumnos.editar') }}" id="form-editar">
         <input type="hidden" name="dni" value="{{ alumno.dni }}">
         <input type="hidden" name="curso" value="{{ alumno.curso_id }}">
 
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label for="apellidos" class="form-label">Apellidos</label>
-                <input type="text" class="form-control" id="apellidos" name="apellidos"
-                       value="{{ alumno.apellidos }}" required>
-            </div>
-            <div class="col-md-6">
-                <label for="nombres" class="form-label">Nombres</label>
-                <input type="text" class="form-control" id="nombres" name="nombres"
-                       value="{{ alumno.nombres }}" required>
+        <!-- ============================ -->
+        <!-- Datos obligatorios básicos    -->
+        <!-- ============================ -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">Datos obligatorios</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="apellidos" class="form-label">Apellidos *</label>
+                        <input type="text" class="form-control" id="apellidos" name="apellidos"
+                               value="{{ alumno.apellidos }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="nombres" class="form-label">Nombres *</label>
+                        <input type="text" class="form-control" id="nombres" name="nombres"
+                               value="{{ alumno.nombres }}" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="cuatrimestre" class="form-label">Cuatrimestre *</label>
+                        <select class="form-select" id="cuatrimestre" name="cuatrimestre" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="1" {% if alumno.cuatrimestre == '1' %}selected{% endif %}>1</option>
+                            <option value="2" {% if alumno.cuatrimestre == '2' %}selected{% endif %}>2</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="anio" class="form-label">Año *</label>
+                        <input type="text" class="form-control" id="anio" name="anio"
+                               value="{{ alumno.anio or '' }}"
+                               pattern="\d{4}" maxlength="4"
+                               inputmode="numeric"
+                               title="4 dígitos, por ejemplo 2026"
+                               placeholder="Ej: 2026" required>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="alert alert-info mt-3 small mb-0">
+        <!-- ============================ -->
+        <!-- Datos personales              -->
+        <!-- ============================ -->
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white">Datos personales</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="fecha_nac" class="form-label">Fecha de nacimiento *</label>
+                        <input type="date" class="form-control" id="fecha_nac" name="fecha_nac"
+                               value="{{ alumno.fecha_nac_iso or '' }}"
+                               min="1900-01-01"
+                               max="2050-12-31"
+                               required>
+                        <div id="feedback-edad" class="form-text"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="genero" class="form-label">Género *</label>
+                        <select class="form-select" id="genero" name="genero" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="Femenino" {% if alumno.genero == 'Femenino' %}selected{% endif %}>Femenino</option>
+                            <option value="Masculino" {% if alumno.genero == 'Masculino' %}selected{% endif %}>Masculino</option>
+                            <option value="Otro" {% if alumno.genero == 'Otro' %}selected{% endif %}>Otro</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="nacionalidad" class="form-label">Nacionalidad *</label>
+                        <select class="form-select" id="nacionalidad" name="nacionalidad" required onchange="actualizarProvincia()">
+                            <option value="">-- Seleccione --</option>
+                            <option value="ARGENTINA" {% if alumno.nacionalidad == 'ARGENTINA' %}selected{% endif %}>Argentina</option>
+                            <option value="BOLIVIA" {% if alumno.nacionalidad == 'BOLIVIA' %}selected{% endif %}>Bolivia</option>
+                            <option value="BRASIL" {% if alumno.nacionalidad == 'BRASIL' %}selected{% endif %}>Brasil</option>
+                            <option value="CHILE" {% if alumno.nacionalidad == 'CHILE' %}selected{% endif %}>Chile</option>
+                            <option value="COLOMBIA" {% if alumno.nacionalidad == 'COLOMBIA' %}selected{% endif %}>Colombia</option>
+                            <option value="ECUADOR" {% if alumno.nacionalidad == 'ECUADOR' %}selected{% endif %}>Ecuador</option>
+                            <option value="PARAGUAY" {% if alumno.nacionalidad == 'PARAGUAY' %}selected{% endif %}>Paraguay</option>
+                            <option value="PERU" {% if alumno.nacionalidad == 'PERU' %}selected{% endif %}>Perú</option>
+                            <option value="URUGUAY" {% if alumno.nacionalidad == 'URUGUAY' %}selected{% endif %}>Uruguay</option>
+                            <option value="VENEZUELA" {% if alumno.nacionalidad == 'VENEZUELA' %}selected{% endif %}>Venezuela</option>
+                            <option value="OTRO" {% if alumno.nacionalidad == 'OTRO' or (alumno.pais_otro and alumno.pais_otro != '') %}selected{% endif %}>Otro</option>
+                            {% if alumno.nacionalidad and alumno.nacionalidad not in ['ARGENTINA','BOLIVIA','BRASIL','CHILE','COLOMBIA','ECUADOR','PARAGUAY','PERU','URUGUAY','VENEZUELA','OTRO',''] %}
+                                <option value="{{ alumno.nacionalidad }}" selected>{{ alumno.nacionalidad|capitalize }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6" id="bloque-otro-pais" style="display:none;">
+                        <label for="pais_otro" class="form-label">Especificar país *</label>
+                        <input type="text" class="form-control" id="pais_otro" name="pais_otro"
+                               value="{{ alumno.pais_otro or '' }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="provincia_nac" class="form-label">Provincia de nacimiento *</label>
+                        <select class="form-select" id="provincia_nac" name="provincia_nac" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="BUENOS AIRES" {% if alumno.provincia_nac == 'BUENOS AIRES' %}selected{% endif %}>Buenos Aires</option>
+                            <option value="CABA" {% if alumno.provincia_nac == 'CABA' %}selected{% endif %}>CABA</option>
+                            <option value="CATAMARCA" {% if alumno.provincia_nac == 'CATAMARCA' %}selected{% endif %}>Catamarca</option>
+                            <option value="CHACO" {% if alumno.provincia_nac == 'CHACO' %}selected{% endif %}>Chaco</option>
+                            <option value="CHUBUT" {% if alumno.provincia_nac == 'CHUBUT' %}selected{% endif %}>Chubut</option>
+                            <option value="CORDOBA" {% if alumno.provincia_nac == 'CORDOBA' %}selected{% endif %}>Córdoba</option>
+                            <option value="CORRIENTES" {% if alumno.provincia_nac == 'CORRIENTES' %}selected{% endif %}>Corrientes</option>
+                            <option value="ENTRE RIOS" {% if alumno.provincia_nac == 'ENTRE RIOS' %}selected{% endif %}>Entre Ríos</option>
+                            <option value="FORMOSA" {% if alumno.provincia_nac == 'FORMOSA' %}selected{% endif %}>Formosa</option>
+                            <option value="JUJUY" {% if alumno.provincia_nac == 'JUJUY' %}selected{% endif %}>Jujuy</option>
+                            <option value="LA PAMPA" {% if alumno.provincia_nac == 'LA PAMPA' %}selected{% endif %}>La Pampa</option>
+                            <option value="LA RIOJA" {% if alumno.provincia_nac == 'LA RIOJA' %}selected{% endif %}>La Rioja</option>
+                            <option value="MENDOZA" {% if alumno.provincia_nac == 'MENDOZA' %}selected{% endif %}>Mendoza</option>
+                            <option value="MISIONES" {% if alumno.provincia_nac == 'MISIONES' %}selected{% endif %}>Misiones</option>
+                            <option value="NEUQUEN" {% if alumno.provincia_nac == 'NEUQUEN' %}selected{% endif %}>Neuquén</option>
+                            <option value="RIO NEGRO" {% if alumno.provincia_nac == 'RIO NEGRO' %}selected{% endif %}>Río Negro</option>
+                            <option value="SALTA" {% if alumno.provincia_nac == 'SALTA' %}selected{% endif %}>Salta</option>
+                            <option value="SAN JUAN" {% if alumno.provincia_nac == 'SAN JUAN' %}selected{% endif %}>San Juan</option>
+                            <option value="SAN LUIS" {% if alumno.provincia_nac == 'SAN LUIS' %}selected{% endif %}>San Luis</option>
+                            <option value="SANTA CRUZ" {% if alumno.provincia_nac == 'SANTA CRUZ' %}selected{% endif %}>Santa Cruz</option>
+                            <option value="SANTA FE" {% if alumno.provincia_nac == 'SANTA FE' %}selected{% endif %}>Santa Fe</option>
+                            <option value="SANTIAGO DEL ESTERO" {% if alumno.provincia_nac == 'SANTIAGO DEL ESTERO' %}selected{% endif %}>Santiago del Estero</option>
+                            <option value="TIERRA DEL FUEGO" {% if alumno.provincia_nac == 'TIERRA DEL FUEGO' %}selected{% endif %}>Tierra del Fuego</option>
+                            <option value="TUCUMAN" {% if alumno.provincia_nac == 'TUCUMAN' %}selected{% endif %}>Tucumán</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="cuil" class="form-label">CUIL *</label>
+                        <input type="text" class="form-control" id="cuil" name="cuil"
+                               value="{{ alumno.cuil or '' }}"
+                               pattern="\d{11}" maxlength="11"
+                               inputmode="numeric"
+                               title="11 dígitos, sin guiones ni espacios"
+                               required>
+                        <div class="form-text">11 dígitos, sin guiones. Ej: 20458877492</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="discapacidad" class="form-label">Certificado de discapacidad *</label>
+                        <select class="form-select" id="discapacidad" name="discapacidad" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="Si" {% if alumno.discapacidad == 'Si' %}selected{% endif %}>Sí</option>
+                            <option value="No" {% if alumno.discapacidad == 'No' %}selected{% endif %}>No</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================ -->
+        <!-- Contacto                      -->
+        <!-- ============================ -->
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">Contacto</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label for="domicilio" class="form-label">Domicilio *</label>
+                        <input type="text" class="form-control" id="domicilio" name="domicilio"
+                               value="{{ alumno.domicilio or '' }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="barrio" class="form-label">Barrio *</label>
+                        <input type="text" class="form-control" id="barrio" name="barrio"
+                               value="{{ alumno.barrio or '' }}" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="telefono" class="form-label">Teléfono personal *</label>
+                        <input type="tel" class="form-control" id="telefono" name="telefono"
+                               value="{{ alumno.telefono or '' }}"
+                               pattern="[0-9\s\-\(\)]{8,20}"
+                               title="Solo números, espacios, guiones y paréntesis"
+                               required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               value="{{ alumno.email or '' }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="telefono_emergencia" class="form-label">Teléfono de emergencia *</label>
+                        <input type="tel" class="form-control" id="telefono_emergencia" name="telefono_emergencia"
+                               value="{{ alumno.telefono_emergencia or '' }}"
+                               pattern="[0-9\s\-\(\)]{8,20}"
+                               title="Solo números, espacios, guiones y paréntesis"
+                               required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================ -->
+        <!-- Datos académicos y laborales  -->
+        <!-- ============================ -->
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark">Datos académicos y laborales</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="estudios" class="form-label">Estudios cursados *</label>
+                        <select class="form-select" id="estudios" name="estudios" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="Primario" {% if alumno.estudios == 'Primario' %}selected{% endif %}>Primario</option>
+                            <option value="Secundario incompleto" {% if alumno.estudios == 'Secundario incompleto' %}selected{% endif %}>Secundario incompleto</option>
+                            <option value="Secundario en curso" {% if alumno.estudios == 'Secundario en curso' %}selected{% endif %}>Secundario en curso</option>
+                            <option value="Secundario completo" {% if alumno.estudios == 'Secundario completo' %}selected{% endif %}>Secundario completo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="estado_laboral" class="form-label">Estado laboral *</label>
+                        <select class="form-select" id="estado_laboral" name="estado_laboral" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="Ocupado" {% if alumno.estado_laboral == 'Ocupado' %}selected{% endif %}>Ocupado</option>
+                            <option value="Desocupado" {% if alumno.estado_laboral == 'Desocupado' %}selected{% endif %}>Desocupado</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================ -->
+        <!-- Observaciones                 -->
+        <!-- ============================ -->
+        <div class="card mb-3">
+            <div class="card-header bg-light text-dark">Observaciones (opcional)</div>
+            <div class="card-body">
+                <textarea class="form-control" id="observaciones" name="observaciones"
+                          rows="3"
+                          placeholder="Datos adicionales, aclaraciones, etc.">{{ alumno.observaciones or '' }}</textarea>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3 small">
             El DNI y el curso no se pueden modificar desde acá.
             Si el alumno cambia de curso, hay que darlo de baja en el actual
             y darlo de alta en el nuevo.
@@ -45,4 +261,135 @@
     </form>
 
 </div>
+
+<script>
+    function actualizarProvincia() {
+        const nacionalidad = document.getElementById('nacionalidad').value;
+        const bloqueOtroPais = document.getElementById('bloque-otro-pais');
+        const inputPaisOtro = document.getElementById('pais_otro');
+        const provinciaSelect = document.getElementById('provincia_nac');
+
+        const paisesConocidos = [
+            'ARGENTINA', 'BOLIVIA', 'BRASIL', 'CHILE', 'COLOMBIA', 'ECUADOR',
+            'PARAGUAY', 'PERU', 'URUGUAY', 'VENEZUELA',
+        ];
+
+        // Si es un país conocido (y no Argentina), o si es OTRO/desconocido
+        const esArgentina = nacionalidad === 'ARGENTINA';
+        const esOtroPais = nacionalidad !== '' && nacionalidad !== 'ARGENTINA'
+                           && (!paisesConocidos.includes(nacionalidad) || nacionalidad === 'OTRO');
+
+        if (nacionalidad === 'OTRO' || (!paisesConocidos.includes(nacionalidad) && nacionalidad !== '' && !esArgentina)) {
+            // Es "Otro" o un país no conocido
+            bloqueOtroPais.style.display = 'block';
+            inputPaisOtro.required = true;
+            // Si el valor del select es un país real (no "OTRO"), ponerlo en el input
+            if (nacionalidad !== 'OTRO') {
+                inputPaisOtro.value = nacionalidad;
+            }
+            provinciaSelect.disabled = true;
+            provinciaSelect.required = false;
+            provinciaSelect.value = '';
+        } else if (esArgentina) {
+            bloqueOtroPais.style.display = 'none';
+            inputPaisOtro.required = false;
+            inputPaisOtro.value = '';
+            provinciaSelect.disabled = false;
+            provinciaSelect.required = true;
+        } else {
+            // País conocido de Sudamérica que no es Argentina
+            bloqueOtroPais.style.display = 'none';
+            inputPaisOtro.required = false;
+            inputPaisOtro.value = '';
+            provinciaSelect.disabled = true;
+            provinciaSelect.required = false;
+            provinciaSelect.value = '';
+        }
+    }
+
+    function calcularEdadAlCierre(fechaNacISO, cuatrimestre, anio) {
+        if (!fechaNacISO || !cuatrimestre || !anio) return null;
+
+        const fechaNac = new Date(fechaNacISO + 'T00:00:00');
+        if (isNaN(fechaNac.getTime())) return null;
+
+        const anioInt = parseInt(anio, 10);
+        if (isNaN(anioInt)) return null;
+
+        let mesCierre, diaCierre, nombreCuatri;
+        if (String(cuatrimestre) === '1') {
+            mesCierre = 6; diaCierre = 30; nombreCuatri = '1°';
+        } else if (String(cuatrimestre) === '2') {
+            mesCierre = 11; diaCierre = 30; nombreCuatri = '2°';
+        } else {
+            return null;
+        }
+
+        const fechaCierre = new Date(anioInt, mesCierre - 1, diaCierre);
+
+        let edad = fechaCierre.getFullYear() - fechaNac.getFullYear();
+        const mesNac = fechaNac.getMonth();
+        const diaNac = fechaNac.getDate();
+        if (mesCierre - 1 < mesNac || (mesCierre - 1 === mesNac && diaCierre < diaNac)) {
+            edad--;
+        }
+
+        const fechaCierreStr = String(diaCierre).padStart(2, '0') + '/' +
+                               String(mesCierre).padStart(2, '0') + '/' + anioInt;
+        const fechaNacStr = String(diaNac).padStart(2, '0') + '/' +
+                            String(mesNac + 1).padStart(2, '0') + '/' + fechaNac.getFullYear();
+
+        return { cumple: edad >= 18, edad, fechaCierreStr, nombreCuatri, fechaNacStr };
+    }
+
+    function validarEdadEnTiempoReal() {
+        const fechaNac = document.getElementById('fecha_nac').value;
+        const cuatri = document.getElementById('cuatrimestre').value;
+        const anio = document.getElementById('anio').value;
+        const feedback = document.getElementById('feedback-edad');
+
+        if (!fechaNac || !cuatri || !anio) {
+            feedback.textContent = '';
+            feedback.className = 'form-text';
+            return;
+        }
+
+        const resultado = calcularEdadAlCierre(fechaNac, cuatri, anio);
+        if (!resultado) {
+            feedback.textContent = '';
+            feedback.className = 'form-text';
+            return;
+        }
+
+        if (resultado.cumple) {
+            feedback.textContent = '✔ Cumple con la edad mínima (' + resultado.edad + ' años al cierre del ' + resultado.nombreCuatri + ' cuatrimestre).';
+            feedback.className = 'form-text text-success';
+        } else {
+            feedback.textContent = '✘ Debe tener 18 años al ' + resultado.fechaCierreStr + '. Actualmente tendría ' + resultado.edad + ' años.';
+            feedback.className = 'form-text text-danger';
+        }
+    }
+
+    document.getElementById('form-editar').addEventListener('submit', function(e) {
+        const fechaNac = document.getElementById('fecha_nac').value;
+        const cuatri = document.getElementById('cuatrimestre').value;
+        const anio = document.getElementById('anio').value;
+
+        if (fechaNac && cuatri && anio) {
+            const resultado = calcularEdadAlCierre(fechaNac, cuatri, anio);
+            if (resultado && !resultado.cumple) {
+                e.preventDefault();
+                alert('El alumno debe tener 18 años cumplidos al ' + resultado.fechaCierreStr +
+                      ' para cursar el ' + resultado.nombreCuatri + ' cuatrimestre.');
+                return false;
+            }
+        }
+    });
+
+    document.getElementById('fecha_nac').addEventListener('change', validarEdadEnTiempoReal);
+    document.getElementById('cuatrimestre').addEventListener('change', validarEdadEnTiempoReal);
+    document.getElementById('anio').addEventListener('input', validarEdadEnTiempoReal);
+
+    document.addEventListener('DOMContentLoaded', actualizarProvincia);
+</script>
 {% endblock %}
