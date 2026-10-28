@@ -1,0 +1,240 @@
+{% extends "layout.html" %}
+{% block title %}Importar inscripciones{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 mb-5 px-3 px-md-4">
+
+    <h2 class="mb-4">📥 Importar inscripciones desde Google Forms</h2>
+
+    <!-- ============================ -->
+    <!-- Formulario de configuración   -->
+    <!-- ============================ -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Configuración de la importación</div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('admin_importar.index') }}">
+
+                <div class="mb-3">
+                    <label for="id_planilla" class="form-label">ID o URL de la planilla del Forms *</label>
+                    <input type="text" class="form-control" id="id_planilla" name="id_planilla"
+                           value="{{ id_planilla or '' }}"
+                           placeholder="https://docs.google.com/spreadsheets/d/XXXXX/edit o solo el ID"
+                           required>
+                    <div class="form-text">
+                        Compartí la planilla con la cuenta de servicio (permiso Lector) antes de continuar.
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="curso" class="form-label">Curso destino *</label>
+                        <select class="form-select" id="curso" name="curso" required>
+                            <option value="">-- Seleccione curso --</option>
+                            {% for c in cursos %}
+                                <option value="{{ c.id }}"
+                                        {% if curso_id == c.id %}selected{% endif %}>
+                                    {{ c.curso }}{% if c.nick %} ({{ c.nick }}){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="cuatrimestre" class="form-label">Cuatrimestre *</label>
+                        <select class="form-select" id="cuatrimestre" name="cuatrimestre" required>
+                            <option value="1" {% if cuatrimestre == '1' %}selected{% endif %}>1</option>
+                            <option value="2" {% if cuatrimestre == '2' %}selected{% endif %}>2</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="anio" class="form-label">Año *</label>
+                        <input type="text" class="form-control" id="anio" name="anio"
+                               value="{{ anio or '' }}"
+                               pattern="\d{4}" maxlength="4"
+                               inputmode="numeric"
+                               required>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex flex-wrap justify-content-between align-items-center">
+                    <button type="submit" class="btn btn-primary">
+                        🔍 Analizar planilla
+                    </button>
+                    <a href="{{ url_for('admin_importar.log_index') }}" class="btn btn-outline-primary">
+                        📋 Ver log de importaciones
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <strong>❌ Error al leer la planilla:</strong><br>
+        {{ error }}
+    </div>
+    {% endif %}
+
+    {% if preview %}
+    <!-- ============================ -->
+    <!-- Resumen del análisis          -->
+    <!-- ============================ -->
+    <div class="card mb-3">
+        <div class="card-header bg-info text-white">Resumen del análisis</div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="h3 mb-0">{{ preview.total }}</div>
+                    <div class="text-muted small">Total en el Forms</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h3 mb-0 text-success">{{ preview.validos }}</div>
+                    <div class="text-muted small">Válidos para importar</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h3 mb-0 text-danger">{{ preview.invalidos }}</div>
+                    <div class="text-muted small">Con errores</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h3 mb-0">
+                        {% if preview.columna_certificacion %}Sí{% else %}No{% endif %}
+                    </div>
+                    <div class="text-muted small">Tiene columna de certificación</div>
+                </div>
+            </div>
+            {% if preview.curso_info %}
+            <hr>
+            <p class="mb-0">
+                <strong>Curso destino:</strong> {{ preview.curso_info.curso }}
+                {% if preview.curso_info.nick %}({{ preview.curso_info.nick }}){% endif %}
+            </p>
+            {% endif %}
+            {% if preview.columna_certificacion %}
+            <p class="mb-0 mt-2">
+                <span class="badge bg-warning text-dark">Certificación detectada</span>
+                Las filas sin certificación (valor distinto a "SI") se marcan como error.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ============================ -->
+    <!-- Preview de las filas          -->
+    <!-- ============================ -->
+    <form method="POST" action="{{ url_for('admin_importar.confirmar') }}"
+          onsubmit="return confirmarImportacion()">
+
+        <div class="card">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <span>Alumnos detectados en el Forms</span>
+                <div>
+                    <button type="button" class="btn btn-sm btn-light" onclick="marcarTodos(true)">Tildar todos los válidos</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="marcarTodos(false)">Destildar todos</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:40px;">✓</th>
+                                <th style="width:50px;">#</th>
+                                <th>DNI</th>
+                                <th>Apellidos, Nombres</th>
+                                <th>F. Nac.</th>
+                                <th>Email</th>
+                                <th>Estado</th>
+                                <th>Detalles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in preview.filas %}
+                            <tr class="{% if fila.errores %}table-danger{% elif fila.advertencias %}table-warning{% else %}table-success{% endif %}">
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input"
+                                           name="filas" value="{{ fila.nro_fila }}"
+                                           {% if fila.importar %}checked{% endif %}
+                                           {% if not fila.valido %}disabled{% endif %}>
+                                </td>
+                                <td class="small text-muted">{{ fila.nro_fila }}</td>
+                                <td>
+                                    {% if fila.datos.dni %}
+                                        <code>{{ fila.datos.dni }}</code>
+                                    {% else %}
+                                        <span class="text-danger">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if fila.datos.apellidos or fila.datos.nombres %}
+                                        <strong>{{ fila.datos.apellidos }}</strong>, {{ fila.datos.nombres }}
+                                    {% else %}
+                                        <span class="text-muted">(sin nombre)</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">{{ fila.datos.fecha_nac or "—" }}</td>
+                                <td class="small">{{ fila.datos.email or "—" }}</td>
+                                <td>
+                                    {% if fila.errores %}
+                                        <span class="badge bg-danger">Con errores</span>
+                                    {% elif fila.advertencias %}
+                                        <span class="badge bg-warning text-dark">Advertencia</span>
+                                    {% else %}
+                                        <span class="badge bg-success">OK</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">
+                                    {% for err in fila.errores %}
+                                        <div class="text-danger">• {{ err }}</div>
+                                    {% endfor %}
+                                    {% for adv in fila.advertencias %}
+                                        <div class="text-warning">• {{ adv }}</div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <strong>⚠️ Antes de importar:</strong>
+            <ul class="mb-0 mt-2">
+                <li>Se va a hacer un <strong>backup automático</strong> de la planilla antes de escribir.</li>
+                <li>Los alumnos se van a agregar a la hoja <code>Alumnos</code> con estado <strong>Activo</strong>.</li>
+                <li>El origen se registra como <strong>IMPORT</strong> (para que puedas identificarlos después).</li>
+                <li>La fecha de inscripción se toma de la "Marca temporal" del Forms.</li>
+            </ul>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-success btn-lg">
+                ✅ Importar seleccionados
+            </button>
+            <a href="{{ url_for('admin_importar.index') }}" class="btn btn-secondary btn-lg">
+                Cancelar
+            </a>
+        </div>
+    </form>
+    {% endif %}
+
+</div>
+
+<script>
+    function marcarTodos(estado) {
+        const checks = document.querySelectorAll('input[name="filas"]:not(:disabled)');
+        checks.forEach(c => c.checked = estado);
+    }
+
+    function confirmarImportacion() {
+        const checks = document.querySelectorAll('input[name="filas"]:checked');
+        if (checks.length === 0) {
+            alert('No seleccionaste ninguna fila para importar.');
+            return false;
+        }
+        return confirm('¿Confirmás importar ' + checks.length + ' alumno(s)? Se va a hacer un backup automático antes de escribir.');
+    }
+</script>
+{% endblock %}

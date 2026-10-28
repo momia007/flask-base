@@ -46,6 +46,8 @@
         <input type="hidden" name="fecha" value="{{ fecha }}">
         <input type="hidden" name="fecha_iso" value="{{ fecha_iso }}">
         <input type="hidden" name="filtro_estado" value="{{ filtro_estado }}">
+        <input type="hidden" name="filtro_anio" value="{{ filtro_anio }}">
+        <input type="hidden" name="filtro_cuatrimestre" value="{{ filtro_cuatrimestre }}">
 
         {% for alumno in alumnos %}
         <div class="alumno-item d-flex align-items-center mb-2 {% if alumno.es_baja %}alumno-baja{% endif %}">

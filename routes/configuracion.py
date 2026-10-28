@@ -133,3 +133,12 @@ def borrar_backup(nombre):
         flash(f"❌ Error borrando backup: {e}", "danger")
 
     return redirect(url_for("configuracion.index"))
+
+@configuracion_bp.route("/ir-a-importar", methods=["POST"])
+def ir_a_importar():
+    """Valida la contraseña y redirige a la pantalla de importación."""
+    password = request.form.get("password", "")
+    if password != current_app.config["ADMIN_PASSWORD"]:
+        flash("❌ Contraseña incorrecta.", "danger")
+        return redirect(url_for("configuracion.index"))
+    return redirect(url_for("admin_importar.index"))

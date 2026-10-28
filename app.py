@@ -28,6 +28,7 @@ from routes.visualizacion_asistencias import visualizacion_bp
 from routes.altas_bajas_modificaciones_alumnos import alumnos_bp
 from routes.configuracion import configuracion_bp
 from routes.admin_alumnos import admin_alumnos_bp
+from routes.admin_importar import admin_importar_bp
 
 app.register_blueprint(alumnos_bp)
 app.register_blueprint(dias_especiales_bp)
@@ -36,6 +37,7 @@ app.register_blueprint(turnos_bp)
 app.register_blueprint(visualizacion_bp)
 app.register_blueprint(configuracion_bp)
 app.register_blueprint(admin_alumnos_bp)
+app.register_blueprint(admin_importar_bp)
 
 # Ruta principal
 @app.route("/")

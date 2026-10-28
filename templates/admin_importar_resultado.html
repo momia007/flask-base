@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block title %}Resultado de la importación{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+
+    <h2 class="mb-4">📥 Resultado de la importación</h2>
+
+    <!-- Backup -->
+    {% if backup_mensaje %}
+    <div class="alert alert-info">
+        <strong>💾 Backup:</strong> {{ backup_mensaje }}
+    </div>
+    {% endif %}
+
+    <!-- Resultado principal -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-6">
+                    <div class="display-4 text-success">{{ importados }}</div>
+                    <div class="texto-secundario">Alumnos importados correctamente</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="display-4 {% if salteados > 0 %}text-warning{% else %}text-muted{% endif %}">
+                        {{ salteados }}
+                    </div>
+                    <div class="texto-secundario">Filas salteadas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Errores por fila -->
+    {% if errores %}
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            Filas que no se pudieron importar
+        </div>
+        <div class="card-body">
+            <ul class="mb-0">
+                {% for err in errores %}
+                <li class="small">{{ err }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Links de acción -->
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('admin_alumnos.index', curso=curso_id) }}"
+           class="btn btn-primary">
+            Ver alumnos del curso
+        </a>
+        <a href="{{ url_for('admin_importar.index') }}"
+           class="btn btn-secondary">
+            Importar otra planilla
+        </a>
+        {% if tiene_pendientes %}
+        <a href="{{ url_for('admin_importar.log_detalle', id_import=id_import) }}"
+           class="btn btn-warning">
+            ⚠️ Ver pendientes ({{ salteados }})
+        </a>
+        {% endif %}
+        <a href="{{ url_for('admin_importar.log_index') }}"
+           class="btn btn-outline-secondary">
+            📋 Ver todas las importaciones
+        </a>
+    </div>
+
+</div>
+{% endblock %}

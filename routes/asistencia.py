@@ -29,14 +29,9 @@ def _estado_de_alumno(keys):
     return "A"
 
 
-def obtener_alumnos(curso_id, filtro_estado="activos"):
-    """Devuelve los alumnos de un curso, aplicando filtro de estado.
-
-    filtro_estado:
-      - "activos" (default): solo ESTADO != B
-      - "bajas": solo ESTADO == B
-      - "todos": sin filtro
-    """
+def obtener_alumnos(curso_id, filtro_estado="activos", filtro_anio="", filtro_cuatrimestre=""):
+    """Devuelve los alumnos de un curso, aplicando filtro de estado,
+    año y cuatrimestre."""
     registros = get_records_cacheado("Alumnos")
     alumnos = []
     for r in registros:
@@ -50,6 +45,18 @@ def obtener_alumnos(curso_id, filtro_estado="activos"):
         if filtro_estado == "bajas" and estado != "B":
             continue
 
+        # Filtro de año
+        if filtro_anio:
+            anio_alumno = str(keys.get("AÑO", "")).strip()
+            if anio_alumno != str(filtro_anio).strip():
+                continue
+
+        # Filtro de cuatrimestre
+        if filtro_cuatrimestre:
+            cuat_alumno = str(keys.get("CUAT", "")).strip()
+            if cuat_alumno != str(filtro_cuatrimestre).strip():
+                continue
+
         alumnos.append({
             "id": keys.get("ID_ALUMNO", ""),
             "apellidos": keys.get("APELLIDOS", ""),
@@ -57,7 +64,7 @@ def obtener_alumnos(curso_id, filtro_estado="activos"):
             "curso": keys.get("ID_CURSO", ""),
             "cuatrimestre": keys.get("CUAT", ""),
             "anio": keys.get("AÑO", ""),
-            "estado": estado,           # "A" o "B"
+            "estado": estado,
             "es_baja": estado == "B",
         })
     return alumnos
@@ -85,7 +92,7 @@ def _presentes_desde_registros(registros, curso, fecha):
 
 @asistencia_bp.route("/<curso>")
 def asistencia(curso):
-    fecha_param = request.args.get("fecha")  # YYYY-MM-DD
+    fecha_param = request.args.get("fecha")
     if fecha_param:
         fecha = datetime.strptime(fecha_param, "%Y-%m-%d").strftime("%d/%m/%Y")
         atrasada = fecha != datetime.now().strftime("%d/%m/%Y")
@@ -97,12 +104,27 @@ def asistencia(curso):
     if filtro_estado not in ("activos", "bajas", "todos"):
         filtro_estado = "activos"
 
+    # --- Año y cuatrimestre: automáticos por defecto, override por URL ---
+    filtro_anio = request.args.get("anio", "").strip()
+    filtro_cuatrimestre = request.args.get("cuatrimestre", "").strip()
+
+    if not filtro_anio:
+        filtro_anio = str(datetime.now().year)
+    if not filtro_cuatrimestre:
+        mes = datetime.now().month
+        filtro_cuatrimestre = "1" if 3 <= mes <= 7 else "2"
+
     registros_asistencias = get_records_cacheado("Asistencias")
     presentes = _presentes_desde_registros(registros_asistencias, curso, fecha)
 
-    alumnos = obtener_alumnos(curso, filtro_estado=filtro_estado)
+    alumnos = obtener_alumnos(
+        curso,
+        filtro_estado=filtro_estado,
+        filtro_anio=filtro_anio,
+        filtro_cuatrimestre=filtro_cuatrimestre,
+    )
 
-    # Porcentajes (usa el caché compartido)
+    # Porcentajes
     try:
         contexto = construir_contexto_asistencia()
     except Exception as e:
@@ -134,6 +156,8 @@ def asistencia(curso):
         presentes=presentes,
         atrasada=atrasada,
         filtro_estado=filtro_estado,
+        filtro_anio=filtro_anio,
+        filtro_cuatrimestre=filtro_cuatrimestre,
     )
 
 
@@ -149,8 +173,9 @@ def guardar(curso):
     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
     fecha = request.form.get("fecha", fecha_hoy)
 
-    # Preservamos filtro y fecha para volver a la misma vista
     filtro_estado = request.form.get("filtro_estado", "activos")
+    filtro_anio = request.form.get("filtro_anio", "")
+    filtro_cuatrimestre = request.form.get("filtro_cuatrimestre", "")
     fecha_iso = request.form.get("fecha_iso", "")
 
     if fecha != fecha_hoy:
@@ -160,7 +185,9 @@ def guardar(curso):
             return redirect(url_for("asistencia.asistencia",
                                     curso=curso,
                                     fecha=fecha_iso,
-                                    estado=filtro_estado))
+                                    estado=filtro_estado,
+                                    anio=filtro_anio,
+                                    cuatrimestre=filtro_cuatrimestre))
 
     registros = get_records_cacheado("Asistencias")
     existentes = {
@@ -187,11 +214,12 @@ def guardar(curso):
     else:
         flash("✅ Asistencia actualizada exitosamente", "success")
 
-    # Volvemos a la MISMA pantalla, preservando fecha y filtro
     return redirect(url_for("asistencia.asistencia",
                             curso=curso,
                             fecha=fecha_iso,
-                            estado=filtro_estado))
+                            estado=filtro_estado,
+                            anio=filtro_anio,
+                            cuatrimestre=filtro_cuatrimestre))
 
 
 # -----------------------------------------------------------------------------

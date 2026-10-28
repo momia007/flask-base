@@ -159,12 +159,14 @@ def _cargar_cursos():
     return cursos
 
 
-def _cargar_alumnos(filtro_curso="", filtro_estado="activos", busqueda=""):
+def _cargar_alumnos(filtro_curso="", filtro_estado="activos", filtro_anio="", filtro_cuatrimestre="", busqueda=""):
     """Carga la lista de alumnos aplicando filtros.
 
     filtro_estado: 'activos' (default) | 'bajas' | 'todos'
     filtro_curso: id de curso, o "" para todos
-    busqueda: texto libre que matchea DNI, Apellidos o Nombres (case-insensitive)
+    filtro_anio: año, o "" para todos
+    filtro_cuatrimestre: '1' / '2', o "" para todos
+    busqueda: texto libre que matchea DNI, Apellidos o Nombres
     """
     cursos_por_id = {c["id"]: c for c in _cargar_cursos()}
     busqueda_norm = busqueda.strip().lower()
@@ -181,6 +183,18 @@ def _cargar_alumnos(filtro_curso="", filtro_estado="activos", busqueda=""):
             continue
         if filtro_estado == "bajas" and estado != "B":
             continue
+
+        # Filtro de año
+        if filtro_anio:
+            anio_alumno = str(keys.get("AÑO", "")).strip()
+            if anio_alumno != str(filtro_anio).strip():
+                continue
+
+        # Filtro de cuatrimestre
+        if filtro_cuatrimestre:
+            cuat_alumno = str(keys.get("CUAT", "")).strip()
+            if cuat_alumno != str(filtro_cuatrimestre).strip():
+                continue
 
         dni = str(keys.get("ID_ALUMNO", "")).strip()
         apellidos = str(keys.get("APELLIDOS", "")).strip()
@@ -223,10 +237,8 @@ def _cargar_alumnos(filtro_curso="", filtro_estado="activos", busqueda=""):
             "observaciones": keys.get("OBSERVACIONES", ""),
         })
 
-    # Orden: por apellido, después nombre
     alumnos.sort(key=lambda a: (a["apellidos"].lower(), a["nombres"].lower()))
     return alumnos
-
 
 # -----------------------------------------------------------------------------
 #  Vistas
@@ -238,10 +250,27 @@ def index():
     filtro_estado = request.args.get("estado", "activos").strip()
     if filtro_estado not in ("activos", "bajas", "todos"):
         filtro_estado = "activos"
+
+    filtro_anio = request.args.get("anio", "").strip()
+    filtro_cuatrimestre = request.args.get("cuatrimestre", "").strip()
+
+    # Por defecto: año y cuatrimestre actuales
+    if not filtro_anio:
+        filtro_anio = str(datetime.now().year)
+    if not filtro_cuatrimestre:
+        mes = datetime.now().month
+        filtro_cuatrimestre = "1" if 3 <= mes <= 7 else "2"
+
     busqueda = request.args.get("q", "").strip()
 
     cursos = _cargar_cursos()
-    alumnos = _cargar_alumnos(filtro_curso, filtro_estado, busqueda)
+    alumnos = _cargar_alumnos(
+        filtro_curso=filtro_curso,
+        filtro_estado=filtro_estado,
+        filtro_anio=filtro_anio,
+        filtro_cuatrimestre=filtro_cuatrimestre,
+        busqueda=busqueda,
+    )
 
     return render_template(
         "admin_alumnos.html",
@@ -249,10 +278,11 @@ def index():
         alumnos=alumnos,
         filtro_curso=filtro_curso,
         filtro_estado=filtro_estado,
+        filtro_anio=filtro_anio,
+        filtro_cuatrimestre=filtro_cuatrimestre,
         busqueda=busqueda,
         total=len(alumnos),
     )
-
 
 # -----------------------------------------------------------------------------
 #  Alta de alumno

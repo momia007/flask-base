@@ -1,0 +1,187 @@
+{% extends "layout.html" %}
+{% block title %}Detalle de importación{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+
+    <h2 class="mb-4">📋 Detalle de importación</h2>
+
+    <!-- Cabecera -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Resumen</div>
+        <div class="card-body">
+            <p><strong>ID:</strong> <code>{{ cabecera.id_import }}</code></p>
+            <p><strong>Fecha:</strong> {{ cabecera.fecha_hora }}</p>
+            <p><strong>Curso:</strong> {{ cabecera.curso_nombre }} (ID {{ cabecera.curso_id }})</p>
+            <p><strong>Período:</strong> {{ cabecera.cuatrimestre }}° cuatrimestre {{ cabecera.anio }}</p>
+            <hr>
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="h4">{{ cabecera.total_form }}</div>
+                    <div class="small">Total en el Forms</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h4 text-success">{{ cabecera.importados }}</div>
+                    <div class="small">Importados</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h4 text-warning">{{ cabecera.pendientes }}</div>
+                    <div class="small">Pendientes</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h4 {% if cabecera.estado == 'COMPLETADO' %}text-success{% else %}text-warning{% endif %}">
+                        {{ cabecera.estado }}
+                    </div>
+                    <div class="small">Estado</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if pendientes %}
+    <!-- Tabla de pendientes editable -->
+    <form method="POST" action="{{ url_for('admin_importar.log_reintentar', id_import=cabecera.id_import) }}"
+          id="form-reintentar">
+
+        <div class="card">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <span>Filas pendientes de importar ({{ pendientes|length }})</span>
+                <div>
+                    <button type="button" class="btn btn-sm btn-light" onclick="marcarTodos(true)">Tildar todos</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="marcarTodos(false)">Destildar todos</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:40px;">✓</th>
+                                <th>Fila</th>
+                                <th>DNI</th>
+                                <th>Apellidos</th>
+                                <th>Nombres</th>
+                                <th>F. Nac.</th>
+                                <th>CUIL</th>
+                                <th>Errores originales</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in pendientes %}
+                            <tr>
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input"
+                                           name="reintentar_filas" value="{{ p.nro_fila }}"
+                                           checked>
+                                </td>
+                                <td class="small text-muted">{{ p.nro_fila }}</td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           name="fila_{{ p.nro_fila }}_dni"
+                                           value="{{ p.dni }}" maxlength="8";>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           name="fila_{{ p.nro_fila }}_apellidos"
+                                           value="{{ p.apellidos }}">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           name="fila_{{ p.nro_fila }}_nombres"
+                                           value="{{ p.nombres }}">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           name="fila_{{ p.nro_fila }}_fecha_nac"
+                                           value="{{ p.fecha_nac }}"
+                                           placeholder="dd/mm/aaaa" style="width:110px;">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           name="fila_{{ p.nro_fila }}_cuil"
+                                           value="{{ p.cuil }}" maxlength="11" style="width:120px;">
+                                </td>
+                                <td class="small">
+                                    {% if p.errores %}
+                                        <div class="text-danger"><strong>Errores:</strong> {{ p.errores }}</div>
+                                    {% endif %}
+                                    {% if p.advertencias %}
+                                        <div class="text-warning"><strong>Advertencias:</strong> {{ p.advertencias }}</div>
+                                    {% endif %}
+                                    {% if not p.errores and not p.advertencias %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="#"
+                                       onclick="descartarFila('{{ cabecera.id_import }}', '{{ p.nro_fila }}', '{{ p.apellidos }} {{ p.nombres }}'); return false;"
+                                       class="btn btn-sm btn-outline-danger"
+                                       title="Descartar esta fila (no se va a importar)">
+                                        🗑️
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <strong>ℹ️ Nota:</strong>
+            <ul class="mb-0">
+                <li>Los campos editables son: DNI, Apellidos, Nombres, Fecha de nacimiento, CUIL.</li>
+                <li>Si algún dato sigue siendo incorrecto, la fila se va a volver a marcar con error.</li>
+                <li>Antes de escribir, se hace un backup automático.</li>
+                <li>Los datos completos originales se conservan en la hoja `Importaciones_Pendientes`.</li>
+                <li>Usá el botón 🗑️ para descartar filas que no querés recuperar.</li>
+            </ul>
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-success btn-lg">
+                ✅ Reintentar seleccionados
+            </button>
+            <a href="{{ url_for('admin_importar.log_imprimir', id_import=cabecera.id_import) }}"
+               target="_blank"
+               class="btn btn-info btn-lg">
+                🖨️ Imprimir pendientes
+            </a>
+            <a href="{{ url_for('admin_importar.log_index') }}" class="btn btn-secondary btn-lg">
+                Cancelar
+            </a>
+        </div>
+        
+    </form>
+    {% else %}
+    <div class="alert alert-success">
+        ✅ No hay pendientes en esta importación. Todo fue importado.
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('admin_importar.log_index') }}" class="btn btn-outline-secondary mt-3">
+        ← Volver al log
+    </a>
+
+</div>
+
+<script>
+    function marcarTodos(estado) {
+        const checks = document.querySelectorAll('input[name="reintentar_filas"]');
+        checks.forEach(c => c.checked = estado);
+    }
+
+    function descartarFila(idImport, nroFila, nombreCompleto) {
+        if (!confirm('¿Descartar la fila ' + nroFila + ' (' + nombreCompleto + ')?\n\nEsta acción NO se puede deshacer.')) {
+            return;
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/importar/log/' + idImport + '/descartar/' + nroFila;
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+{% endblock %}

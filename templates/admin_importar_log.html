@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block title %}Importaciones{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+
+    <h2 class="mb-4">📋 Log de importaciones</h2>
+
+    {% if importaciones %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Fecha y hora</th>
+                    <th>Curso</th>
+                    <th>Cuat.</th>
+                    <th>Año</th>
+                    <th>Total</th>
+                    <th>Importados</th>
+                    <th>Pendientes</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for imp in importaciones %}
+                <tr>
+                    <td class="small">{{ imp.fecha_hora }}</td>
+                    <td>{{ imp.curso_nombre }}</td>
+                    <td>{{ imp.cuatrimestre }}</td>
+                    <td>{{ imp.anio }}</td>
+                    <td>{{ imp.total_form }}</td>
+                    <td class="text-success fw-bold">{{ imp.importados }}</td>
+                    <td class="{% if imp.pendientes|int > 0 %}text-warning fw-bold{% else %}text-muted{% endif %}">
+                        {{ imp.pendientes }}
+                    </td>
+                    <td>
+                        {% if imp.estado == "COMPLETADO" %}
+                            <span class="badge bg-success">Completado</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Con pendientes</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('admin_importar.log_detalle', id_import=imp.id_import) }}"
+                           class="btn btn-sm btn-outline-primary">
+                            Ver detalle
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No hay importaciones registradas todavía.
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('admin_importar.index') }}" class="btn btn-secondary mt-3">
+        ← Volver a importar
+    </a>
+
+</div>
+{% endblock %}

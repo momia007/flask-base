@@ -28,6 +28,21 @@
                         {% endfor %}
                     </select>
                 </div>
+
+                <div class="col-6 col-md-1">
+                    <label class="form-label small mb-1">Año</label>
+                    <input type="number" name="anio" class="form-control form-control-sm"
+                           value="{{ filtro_anio }}" min="2020" max="2050">
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-1">Cuatrimestre</label>
+                    <select name="cuatrimestre" class="form-select form-select-sm">
+                        <option value="1" {% if filtro_cuatrimestre == '1' %}selected{% endif %}>1</option>
+                        <option value="2" {% if filtro_cuatrimestre == '2' %}selected{% endif %}>2</option>
+                    </select>
+                </div>
+
                 <div class="col-12 col-md-2">
                     <label class="form-label small mb-1">Estado</label>
                     <select name="estado" class="form-select form-select-sm">
@@ -36,12 +51,14 @@
                         <option value="todos" {% if filtro_estado == 'todos' %}selected{% endif %}>Todos</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-4">
+
+                <div class="col-12 col-md-2">
                     <label class="form-label small mb-1">Buscar</label>
                     <input type="text" name="q" class="form-control form-control-sm"
-                           placeholder="DNI, apellido o nombre..." value="{{ busqueda }}">
+                           placeholder="DNI, apellido..." value="{{ busqueda }}">
                 </div>
-                <div class="col-12 col-md-3 d-flex gap-2">
+
+                <div class="col-12 col-md-2 d-flex gap-2">
                     <button class="btn btn-sm btn-primary w-100">Filtrar</button>
                     <a href="{{ url_for('admin_alumnos.index') }}"
                        class="btn btn-sm btn-outline-secondary">Limpiar</a>
@@ -49,7 +66,7 @@
             </form>
         </div>
     </div>
-
+    
     <!-- Resultado -->
     <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="small text-muted">

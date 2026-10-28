@@ -7,6 +7,48 @@
     <h2 class="mb-4">⚙️ Configuración</h2>
 
     <!-- ============================ -->
+    <!-- Importar inscripciones        -->
+    <!-- ============================ -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Importar inscripciones desde Google Forms</div>
+        <div class="card-body">
+            <p class="text-muted">
+                Cargá las inscripciones desde la planilla de respuestas de un Google Forms.
+                Requiere contraseña de administrador.
+            </p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalImportar">
+                📥 Importar inscripciones
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal para pedir contraseña -->
+    <div class="modal fade" id="modalImportar" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Acceso a importación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('configuracion.ir_a_importar') }}">
+                    <div class="modal-body">
+                        <p>Ingresá la contraseña de administrador para acceder al módulo de importación.</p>
+                        <div class="mb-3">
+                            <label for="importPassword" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="importPassword"
+                                   name="password" required autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Acceder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================ -->
     <!-- Info de la aplicación         -->
     <!-- ============================ -->
     <div class="card mb-4">

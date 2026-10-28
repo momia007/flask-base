@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pendientes de importar - {{ cabecera.curso_nombre }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin: 20px;
+            color: #000;
+        }
+        h1 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        h2 {
+            font-size: 13px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #555;
+        }
+        .header-info {
+            border: 1px solid #000;
+            padding: 8px;
+            margin-bottom: 15px;
+        }
+        .header-info p {
+            margin: 2px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #999;
+            padding: 5px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background: #eee;
+            font-weight: bold;
+        }
+        .telefono {
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .errores {
+            font-size: 10px;
+            color: #900;
+        }
+        .no-print {
+            margin-top: 20px;
+            text-align: center;
+        }
+        @media print {
+            .no-print { display: none; }
+            body { margin: 10mm; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Alumnos pendientes de importar</h1>
+    <h2>Lista para contactar y verificar datos</h2>
+
+    <div class="header-info">
+        <p><strong>Curso:</strong> {{ cabecera.curso_nombre }}</p>
+        <p><strong>Período:</strong> {{ cabecera.cuatrimestre }}° cuatrimestre {{ cabecera.anio }}</p>
+        <p><strong>Fecha del intento:</strong> {{ cabecera.fecha_hora }}</p>
+        <p><strong>Cantidad de pendientes:</strong> {{ pendientes|length }}</p>
+    </div>
+
+    {% if pendientes %}
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30px;">#</th>
+                <th style="width:80px;">DNI</th>
+                <th>Apellidos, Nombres</th>
+                <th style="width:80px;">F. Nac.</th>
+                <th style="width:130px;">Teléfono</th>
+                <th style="width:110px;">Tel. Emergencia</th>
+                <th>Email</th>
+                <th>Domicilio</th>
+                <th>Errores / Advertencias</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in pendientes %}
+            <tr>
+                <td>{{ p.nro_fila }}</td>
+                <td>{{ p.dni }}</td>
+                <td><strong>{{ p.apellidos }}</strong>, {{ p.nombres }}</td>
+                <td>{{ p.fecha_nac }}</td>
+                <td class="telefono">{{ p.telefono or "—" }}</td>
+                <td class="telefono">{{ p.telefono_emergencia or "—" }}</td>
+                <td style="font-size: 10px;">{{ p.email }}</td>
+                <td style="font-size: 10px;">{{ p.domicilio }}</td>
+                <td class="errores">
+                    {% if p.errores %}
+                        <div><strong>Errores:</strong> {{ p.errores }}</div>
+                    {% endif %}
+                    {% if p.advertencias %}
+                        <div style="color: #b36b00;"><strong>Advertencias:</strong> {{ p.advertencias }}</div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No hay pendientes en esta importación.</p>
+    {% endif %}
+
+    <div class="no-print">
+        <button onclick="window.print()" style="padding: 8px 20px; font-size: 14px; cursor: pointer;">
+            🖨️ Imprimir
+        </button>
+        <button onclick="window.close()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; margin-left: 10px;">
+            Cerrar
+        </button>
+    </div>
+
+</body>
+</html>
